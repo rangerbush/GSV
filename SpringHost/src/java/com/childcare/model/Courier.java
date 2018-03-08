@@ -19,7 +19,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 /**
- *
+ * This class is responsible for sending mail to certain mail address
  * @author New User
  */
 public class Courier {
@@ -63,7 +63,7 @@ public class Courier {
 		}
 	}
 
-    
+    //this method is used
         public  static void sendMail(String text) throws  RuntimeException
     {
  Properties props = new Properties();

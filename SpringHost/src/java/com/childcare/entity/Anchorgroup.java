@@ -40,6 +40,14 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Anchorgroup.findByGroupName", query = "SELECT a FROM Anchorgroup a WHERE a.groupName = :groupName")})
 public class Anchorgroup implements Serializable {
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "anchorgroup")
+    private Collection<ActionTaken> actionTakenCollection;
+
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "Cluster")
+    private int cluster;
+
     // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
     @Basic(optional = false)
     @NotNull
@@ -69,6 +77,10 @@ public class Anchorgroup implements Serializable {
     @NotNull
     @Column(name = "Type")
     private int type;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "MaxSeq")
+    private int maxSeq;
 
     @ManyToMany(mappedBy = "anchorgroupCollection")
     private Collection<ActionSet> actionSetCollection;
@@ -234,6 +246,37 @@ public class Anchorgroup implements Serializable {
 
     public void setType(int type) {
         this.type = type;
+    }
+
+    /**
+     * @return the maxSeq
+     */
+    public int getMaxSeq() {
+        return maxSeq;
+    }
+
+    /**
+     * @param maxSeq the maxSeq to set
+     */
+    public void setMaxSeq(int maxSeq) {
+        this.maxSeq = maxSeq;
+    }
+
+    public int getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(int cluster) {
+        this.cluster = cluster;
+    }
+
+    @XmlTransient
+    public Collection<ActionTaken> getActionTakenCollection() {
+        return actionTakenCollection;
+    }
+
+    public void setActionTakenCollection(Collection<ActionTaken> actionTakenCollection) {
+        this.actionTakenCollection = actionTakenCollection;
     }
     
 }

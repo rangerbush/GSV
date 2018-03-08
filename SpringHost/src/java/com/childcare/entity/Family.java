@@ -40,6 +40,11 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Family.findByFamilyPassword", query = "SELECT f FROM Family f WHERE f.familyPassword = :familyPassword")})
 public class Family implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "MaxCluster")
+    private int maxCluster;
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -150,6 +155,14 @@ public class Family implements Serializable {
     @Override
     public String toString() {
         return "com.childcare.entity.Family[ fid=" + fid + " ]";
+    }
+
+    public int getMaxCluster() {
+        return maxCluster;
+    }
+
+    public void setMaxCluster(int maxCluster) {
+        this.maxCluster = maxCluster;
     }
     
 }

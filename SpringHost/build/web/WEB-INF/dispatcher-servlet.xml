@@ -82,5 +82,11 @@
         <property name="dataSource" ref="dataSource"></property>  
     </bean>  
 
+    <bean id="daoDevice" class="com.childcare.model.DAO.DAODevice"/>
+    <bean id="utility" class="com.childcare.model.support.PasswordUtility"/>
+    <bean id="daoFamily" class="com.childcare.model.DAO.DAOFamily"/>
+    <bean id="daoGroup" class="com.childcare.model.DAO.DAOAnchorGroup"/>
+    <bean id="daoAnchor" class="com.childcare.model.DAO.DAOAnchor"/>
+    <bean id="daoActionSet" class="com.childcare.model.DAO.DAOActionSet"/>
     
 </beans>

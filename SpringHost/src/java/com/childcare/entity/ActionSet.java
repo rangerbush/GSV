@@ -8,6 +8,7 @@ package com.childcare.entity;
 import java.io.Serializable;
 import java.util.Collection;
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -16,6 +17,7 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -34,6 +36,14 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "ActionSet.findByAid", query = "SELECT a FROM ActionSet a WHERE a.aid = :aid")
     , @NamedQuery(name = "ActionSet.findByDesc", query = "SELECT a FROM ActionSet a WHERE a.desc = :desc")})
 public class ActionSet implements Serializable {
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "actionSet")
+    private Collection<ActionTaken> actionTakenCollection;
+
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "Discard")
+    private boolean discard;
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -112,6 +122,23 @@ public class ActionSet implements Serializable {
     @Override
     public String toString() {
         return "com.childcare.entity.ActionSet[ aid=" + aid + " ]";
+    }
+
+    public boolean getDiscard() {
+        return discard;
+    }
+
+    public void setDiscard(boolean discard) {
+        this.discard = discard;
+    }
+
+    @XmlTransient
+    public Collection<ActionTaken> getActionTakenCollection() {
+        return actionTakenCollection;
+    }
+
+    public void setActionTakenCollection(Collection<ActionTaken> actionTakenCollection) {
+        this.actionTakenCollection = actionTakenCollection;
     }
     
 }

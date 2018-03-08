@@ -8,6 +8,7 @@ package com.childcare.model;
 import com.childcare.entity.Account;
 import com.childcare.entity.Device;
 import com.childcare.entity.DeviceAudit;
+import com.childcare.entity.structure.Response;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -18,6 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
 import javax.mail.MessagingException;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.dao.DataAccessException;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_XML_VALUE;
@@ -53,30 +55,39 @@ public class DeviceController {
     @RequestMapping(value = "/register", method = POST,produces = { APPLICATION_JSON_VALUE })
     public Object register(@RequestBody Device device) {
         try{
-        jdbcDataDAO.createDevice(device);
+         String hashed = this.jdbcDataDAO.getDaoFamily().getFamilyInstance(device.getFid().getFid()).getFamilyPassword(); //find stored hashed password with given fid
+          if (BCrypt.checkpw(device.getFid().getFamilyPassword(), hashed)) //if passes the check, do the update
+           {
+               jdbcDataDAO.getDaoDevice().createDevice(device);
+               return new Response();
+           }
+           else
+               return new Response("Invalid FamilyID or FamilyPassword");
         }
         catch (DataAccessException|FamilyNullException e)
         {
-          return "{\"response\":\""+e.getMessage()+"\"}";
+          return new Response(e);
         }
-           return "{\"response\":\"SUCC\"}";
      }
     
     
     @ResponseBody
-    @RequestMapping(value = "/fetch/{id}/{family}", method = GET,produces = { APPLICATION_JSON_VALUE })
-    public Object fetch(@PathVariable(value = "id")String id,@PathVariable(value = "family")int fid) {
+    @RequestMapping(value = "/fetch/{id}/{family}/{passwd}", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object fetch(@PathVariable(value = "id")String id,@PathVariable(value = "family")int fid,@PathVariable(value = "passwd")String passwd) {
         
         try{
-        Device device = (Device)jdbcDataDAO.getDeviceInstance(id);
+            System.out.println(this.jdbcDataDAO.getUtility().selfCheck());
+        if (!this.jdbcDataDAO.getUtility().Validator(passwd, fid))
+            return new Response("Invalid FamilyID or FamilyPassword");
+        Device device = (Device)jdbcDataDAO.getDaoDevice().getDeviceInstance(id);
         if (!device.getFid().getFid().equals(fid))
-            return "{\"response\":\"Invalid FamilyID\"}";
-                return device;
+           return new Response("Invalid Family ID");
+                return new Response(device);
         }
 
          catch (DataAccessException e)
          {
-           return "{\"response\":\""+e.getMessage()+"\"}";
+          return new Response(e);
          }
 
     }
@@ -87,13 +98,43 @@ public class DeviceController {
     public Object update(@RequestBody Device device)
     {
        try{
-        jdbcDataDAO.updateDevice(device);
+           String hashed = this.jdbcDataDAO.getDaoFamily().getFamilyInstance(device.getFid().getFid()).getFamilyPassword(); //find stored hashed password with given fid
+           if (BCrypt.checkpw(device.getFid().getFamilyPassword(), hashed)) //if passes the check, do the update
+           {
+               jdbcDataDAO.getDaoDevice().updateDevice(device);
+               return new Response();
+           }
+           else
+               return new Response("Invalid FamilyID or FamilyPassword");
+           
         }
         catch (DataAccessException|FamilyNullException e)
         {
-             return "{\"response\":\""+e.getMessage()+"\"}";
+             return new Response(e);
         }
-        return "{\"response\":\"SUCC\"}";
+        
+    }
+    
+    @ResponseBody
+    @RequestMapping(value = "/delete/{id}/{family}/{passwd}", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object delete(@PathVariable(value = "id")String id,@PathVariable(value = "family")int fid,@PathVariable(value = "passwd")String passwd)
+    {
+        try
+        {
+         if (!this.jdbcDataDAO.getDaoDevice().checkDIDandFID(id, fid))   
+            return new Response("Given FamilyID does not match record of given DeviceID.");
+        if (this.jdbcDataDAO.getUtility().Validator(passwd, fid))  
+            {
+                this.jdbcDataDAO.getDaoDevice().deleteDevice(id);
+                return new Response();
+            }
+        else
+             return new Response("Invalid FamilyID or FamilyPassword");
+        }
+        catch (DataAccessException e)
+        {
+             return new Response(e);
+        }
     }
     
     
@@ -102,7 +143,7 @@ public class DeviceController {
     @RequestMapping(value = "/mail/{id}", method = GET,produces = { APPLICATION_JSON_VALUE })
     public Object mail(@PathVariable(value = "id")String id) { 
         List<DeviceAudit> list;
-        list = jdbcDataDAO.getAudit(id);
+        list = jdbcDataDAO.getDaoDevice().getAudit(id);
         Iterator it = list.iterator();
         String text="";
         DeviceAudit instance;
@@ -113,10 +154,10 @@ public class DeviceController {
         }
          try {
              Courier.sendMail(text);
-         } catch (RuntimeException ex) {
-            return "{\"response\":\"RuntimeException: "+ex.getMessage()+"\"}";
+         } catch (RuntimeException e) {
+            return new Response(e);
          } 
-           return "{\"response\":\"SUCC\"}";
+          return new Response();
 
 
     }
