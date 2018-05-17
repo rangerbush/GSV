@@ -5,6 +5,9 @@
  */
 package com.childcare.model.DAO;
 
+import com.childcare.entity.Account;
+import com.childcare.entity.AccountFamily;
+import com.childcare.entity.AccountFamilyPK;
 import com.childcare.entity.Family;
 import com.mysql.jdbc.PreparedStatement;
 import com.mysql.jdbc.Statement;
@@ -13,6 +16,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.List;
 import javax.annotation.Resource;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.dao.DataAccessException;
@@ -38,6 +42,7 @@ public class DAOFamily {
      */
     private Family familyNormolizer(Family fa)
     {
+        System.out.println("Raw Password:"+fa.getFamilyPassword());
         fa.setFamilyPassword(BCrypt.hashpw(fa.getFamilyPassword(), BCrypt.gensalt()));
         System.out.println("Bcrypted Password:"+fa.getFamilyPassword());
         if (fa.getMaxCluster()<1)
@@ -71,6 +76,98 @@ public class DAOFamily {
         }  
           
     }  
+      
+    protected class FandAMapper implements RowMapper,Serializable{  
+            /**
+             * 
+             * @param arg0 the ResultSet to map (pre-initialized for the current row)
+             * @param arg1 the number of the current row
+             * @return
+             * @throws SQLException 
+             */
+        @Override  
+        public Object mapRow(ResultSet arg0, int arg1) throws SQLException {  
+            // TODO Auto-generated method stub  
+            AccountFamily instance = new AccountFamily(); 
+            AccountFamilyPK pk = new AccountFamilyPK();
+            pk.setFid(arg0.getInt("FID"));
+            pk.setUid(arg0.getInt("UID"));
+            instance.setAccountFamilyPK(pk);  
+            instance.setStatus(arg0.getInt("status"));
+            instance.setFamily(new Family(arg0.getInt("FID")));
+            instance.setAccount(new Account(arg0.getLong("UID")));
+            return instance;  
+        }  
+          
+    } 
+    
+   /**
+    * find owner's uid of a family
+    * @param fid
+    * @return 
+    */
+    public Integer findOwner(int fid)
+    {
+        String sql = "select `UID` from `GSV_DB`.`Account_Family` where `FID` = "+fid+" and `status` = 0;";  
+        return jdbcTemplate.queryForInt(sql);
+    }
+    
+    
+    public List<AccountFamily> getMembers(int fid)
+    {
+        String sql = "select * from `GSV_DB`.`Account_Family` where `FID` = "+fid+";";
+         List<AccountFamily> list = this.jdbcTemplate.query(sql,new FandAMapper());
+         return list;
+    }
+    
+    public List<Family> findMyFamilies(long uid)
+    {
+        String sql = "select * from `GSV_DB`.`family` where `FID` IN (select `FID` from `GSV_DB`.`Account_Family` where `UID` = "+uid+");";
+         List<Family> list = this.jdbcTemplate.query(sql,new FamilyMapper());
+         return list;
+    }
+    
+    public List<Family> findOwnedFamilies(long uid)
+    {
+        String sql = "select * from `GSV_DB`.`family` where `FID` IN (select `FID` from `GSV_DB`.`Account_Family` where `UID` = "+uid+" and `status` = 0) ;";
+         List<Family> list = this.jdbcTemplate.query(sql,new FamilyMapper());
+         return list;
+    }
+    
+    public Family findFamilyByGID(int gid)
+    {
+        String sql = "select * from `GSV_DB`.`family` where `FID` = (select `FID` from `GSV_DB`.`anchorgroup` where `GID` = "+gid+") ;";
+         Family family = (Family)this.jdbcTemplate.queryForObject(sql, new FamilyMapper());
+         return family;
+    }
+    
+    public Family findFamilyByCID(int cid)
+    {
+        String sql = "SELECT * FROM `GSV_DB`.`family` WHERE `family`.`fid` = (select `FID` from `Child` where `CID` = "+cid+")  ;";
+        return (Family)this.jdbcTemplate.queryForObject(sql, new FamilyMapper());
+    }
+    
+    public void addRelationship(int fid,long uid,int status)
+    {
+        String sql = "INSERT INTO `GSV_DB`.`Account_Family`\n" +
+                    "(`FID`,`UID`,`status`)\n" +
+                    "VALUES\n" +
+                    "("+fid+","+uid+","+status+");";
+        this.jdbcTemplate.execute(sql);
+    }
+    
+    public void updateRelationship(int fid,long uid,int status)
+    {
+        String sql = "UPDATE `GSV_DB`.`Account_Family` SET `status` = '"+status+"' WHERE `FID` = "+fid+" AND `UID` ="+uid+";";
+        this.jdbcTemplate.execute(sql);
+    }
+    
+    @Deprecated
+    public int findMyFamily(long uid)
+    {
+        String sql = "select * from `GSV_DB`.`Account_Family` where `UID` = "+uid+";";
+        return this.jdbcTemplate.queryForObject(sql, Integer.class);
+    }
 
       /**
        * 
@@ -78,7 +175,7 @@ public class DAOFamily {
        * @return
        * @throws DataAccessException 
        */
-     public long createFamily(Family fa) throws DataAccessException
+     public int createFamily(Family fa) throws DataAccessException
      {
          Family family = this.familyNormolizer(fa);
          String sql = "INSERT INTO `GSV_DB`.`family` (`familyName`, `FamilyPassword`,`MaxCluster`)" +
@@ -93,7 +190,7 @@ public class DAOFamily {
             public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {  
             PreparedStatement ps = (PreparedStatement) connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);  
             return ps;  }},keyHolder);
-            long id = keyHolder.getKey().longValue(); 
+            int id = keyHolder.getKey().intValue(); 
             return id;
             //http://fancyboy2050.iteye.com/blog/1455559
             //在JDBC 3.0规范中，当新增记录时，允许将数据库自动产生的主键值绑定到Statement或PreparedStatement中
@@ -111,13 +208,7 @@ public class DAOFamily {
         String sql = "select * from `GSV_DB`.`family` where `fid` = ?;";  
         Object[] params = {fid};  
         int[] types = {Types.INTEGER}; 
-          try{
-        return (Family)jdbcTemplate.queryForObject(sql, params, types, new FamilyMapper());
-        }
-        catch (DataAccessException e)
-         {
-              throw e;     
-          }
+        return (Family)jdbcTemplate.queryForObject(sql, params, types, new FamilyMapper());  
     }
      
     /**

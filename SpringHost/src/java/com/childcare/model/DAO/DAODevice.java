@@ -8,8 +8,9 @@ package com.childcare.model.DAO;
 import com.childcare.entity.Device;
 import com.childcare.entity.DeviceAudit;
 import com.childcare.entity.Family;
-import com.childcare.model.FamilyNullException;
+import com.childcare.model.NullException;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -26,19 +27,22 @@ import org.springframework.jdbc.core.RowMapper;
 public class DAODevice {
     @Resource  
    private JdbcTemplate jdbcTemplate;
-    
 
     
-      private Device deviceNormolizer(Device inDevice) throws FamilyNullException
+      private Device deviceNormolizer(Device inDevice) throws NullException
     {
         if (inDevice.getDeviceID()==null)
-            inDevice.setDeviceID("");
+            throw new NullException("DeviceID is null");
         if (inDevice.getFid()==null||inDevice.getFid().getFid()==null)
         {
-            throw new FamilyNullException("Family is null");
+            throw new NullException("Family is null");
         }
         if (inDevice.getPulse()==null)
             inDevice.setPulse(0);
+        if (inDevice.getLatitude()==null)
+            inDevice.setLatitude(BigDecimal.ZERO);
+        if (inDevice.getLongitude()==null)
+            inDevice.setLongitude(BigDecimal.ZERO);
         return inDevice;
     }
     
@@ -53,7 +57,6 @@ public class DAODevice {
         @Override  
         public Object mapRow(ResultSet arg0, int arg1) throws SQLException {  
             // TODO Auto-generated method stub  
-            System.out.println("----Device Mapper Start--------");
             Device device = new Device();  
             device.setDeviceID(arg0.getString("DeviceID"));  
             Family f = new Family();
@@ -62,6 +65,9 @@ public class DAODevice {
             device.setLatitude(arg0.getBigDecimal("Latitude"));  
             device.setLongitude(arg0.getBigDecimal("Longitude"));  
             device.setPulse(arg0.getInt("pulse")>=0?arg0.getInt("pulse"):0); 
+            device.setStatus(arg0.getInt("Status"));
+            device.setTimeStamp(arg0.getDate("TimeStamp"));
+            device.setCluster(arg0.getInt("Cluster"));
             return device;  
         }  
           
@@ -71,35 +77,28 @@ public class DAODevice {
      * Create a new device with given PK
      * @param iDevice input device instance
      * @throws DataAccessException when having issue accessing DB
-     * @throws FamilyNullException when FID is null
+     * @throws com.childcare.model.NullException
      */    
-    public void createDevice(Device iDevice) throws DataAccessException,FamilyNullException {  
+    public void createDevice(Device iDevice) throws DataAccessException,NullException {  
         // TODO Auto-generated method stub  
         //example ('Enterprise','123','mail','12345','0')
          Device device = iDevice;
        try{
        device = this.deviceNormolizer(iDevice);}
-       catch (FamilyNullException e){
+       catch (NullException e){
            throw e;
        }
         String sql =  "INSERT INTO `GSV_DB`.`Device` (`DeviceID`,`FID`,`Longitude`," +
                         "`Latitude`," +
-                        "`pulse`)" +
+                        "`pulse`,`Cluster`)" +
                         "VALUES" +
                         "('"+device.getDeviceID()+"'," +
                         device.getFid().getFid()+"," +
                         device.getLongitude()+"," +
                         device.getLatitude()+"," +
-                        device.getPulse()+");";
-        try
-        {
+                        device.getPulse()+","+
+                        device.getCluster()+");";
          this.jdbcTemplate.execute(sql);
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
- 
         }  
     
     
@@ -113,27 +112,14 @@ public class DAODevice {
         String sql = "select * from `GSV_DB`.`Device` where `DeviceID` = ?;";  
         Object[] params = {DID};  
         int[] types = {Types.VARCHAR}; 
-          try{
         return (Device)jdbcTemplate.queryForObject(sql, params, types, new DeviceMapper());
-        }
-        catch (DataAccessException e)
-         {
-              throw e;     
-          }
     }
     
     public void deleteDevice(String did) throws DataAccessException
     {
         String sql = "DELETE FROM `GSV_DB`.`Device`\n" +
                     "WHERE `DeviceID` = '"+did+"';";
-        try
-        {
             this.jdbcTemplate.execute(sql);
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
     }
     
     /**
@@ -150,12 +136,29 @@ public class DAODevice {
         return familyID == fid;
     }
     
-      public void updateDevice(Device iDevice) throws DataAccessException,FamilyNullException
+    /**
+     * Simply refresh timestamp of device to avoid being missing
+     * @param device
+     * @throws DataAccessException 
+     */
+    public void touch(Device device) throws DataAccessException
+    {
+        //pulse, long, lat, timestamp
+           String sql = "UPDATE `GSV_DB`.`Device`" +
+                    "SET" +
+                    "`TimeStamp` = now()"+","+
+                   "`pulse` = "+device.getPulse()+","+
+                   "`Longitude` = " +device.getLongitude()+","+
+                    "`Latitude` = " +device.getLatitude()+
+                    " WHERE `DeviceID` = '"+device.getDeviceID()+"';";
+         this.jdbcTemplate.execute(sql);
+    }
+    
+      public void updateDevice(Device device) throws DataAccessException,NullException
       {         
-          Device device = iDevice;
        try{
-       device = this.deviceNormolizer(iDevice);}
-       catch (FamilyNullException e){
+       device = this.deviceNormolizer(device);}
+       catch (NullException e){
            throw e;
        }
        
@@ -165,18 +168,13 @@ public class DAODevice {
                     "`FID` = " +device.getFid().getFid()+","+
                     "`Longitude` = " +device.getLongitude()+","+
                     "`Latitude` = " +device.getLatitude()+","+
-                    "`pulse` = " +device.getPulse()+
+                    "`pulse` = " +device.getPulse()+","+
+                    "`Status` = "+device.getStatus()+","+
+                    "`TimeStamp` = now()"+","+
+                    "`Cluster` = "+device.getCluster()+
                     " WHERE `DeviceID` = '"+device.getDeviceID()+"';";
-               
-                 try
-        {
          this.jdbcTemplate.execute(sql);
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
-         sql= "INSERT INTO `GSV_DB`.`DeviceAudit`" +
+    /*     sql= "INSERT INTO `GSV_DB`.`DeviceAudit`" +
                 "(`DeviceID`," +
                 "`Longitude`," +
                 "`Latitude`) " +
@@ -184,16 +182,52 @@ public class DAODevice {
                 "'"+device.getDeviceID()+"', " +
                 device.getLongitude()+","+
                device.getLatitude()+ ");";
-               try
-        {
-         this.jdbcTemplate.execute(sql);
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
-          
+         this.jdbcTemplate.execute(sql);      
+               */
       }
+      
+      public List<Device> getMissing() throws DataAccessException
+      {
+        String sql = "SELECT `Device`.`DeviceID`,\n" +
+                "    `Device`.`FID`,\n" +
+                "    `Device`.`Longitude`,\n" +
+                "    `Device`.`Latitude`,\n" +
+                "    `Device`.`pulse`,\n" +
+                "    `Device`.`Status`,\n" +
+                "    `Device`.`TimeStamp`,\n" +
+                "    `Device`.`Cluster`\n" +
+                "FROM `GSV_DB`.`Device` WHERE `Status` = 2;";
+          List<Device> list = this.jdbcTemplate.query(sql,new DeviceMapper());  /*- list of missing devices -*/
+          return list;     
+      }
+      
+      /**
+       * 
+       * @param toI Inform client for how many times
+       * @param allowance_value like 5
+       * @param allowance_unit line _minute  (_ stands for space bar)
+       * @throws DataAccessException 
+       */
+      public void missing2Deactivated(int toI,int allowance_value, String allowance_unit) throws DataAccessException
+      {
+          /*-- Set all missing to deactivated after  --*/
+          String sql = "UPDATE `GSV_DB`.`Device`\n" +
+                       "SET\n" +
+                       "`Status` = 0\n" +
+                       "WHERE `Status` = 2 and `TimeStamp`<date_sub(now(),interval "+allowance_value*toI+allowance_unit+");";
+          this.jdbcTemplate.execute(sql);
+      }
+      
+      public void registerMissing(int allowance_value, String allowance_unit) throws DataAccessException
+      {
+          /*-- Set all devices in Status 1(Tracking) who have gone slient for more than a given length of time to Status 2 --*/
+          String sql = "UPDATE `GSV_DB`.`Device`\n" +
+                       "SET\n" +
+                       "`Status` = 2\n" +
+                       "WHERE `Status` = 1 and `TimeStamp`<date_sub(now(),interval "+allowance_value+allowance_unit+");";
+          this.jdbcTemplate.execute(sql);
+      }
+      
       
       /**
        * Enquiry audit information of particular Device ID

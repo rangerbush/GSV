@@ -8,10 +8,13 @@ package com.childcare.model;
 import com.childcare.entity.Anchorgroup;
 import com.childcare.entity.Family;
 import com.childcare.entity.structure.Response;
+import com.childcare.entity.structure.ResponsePayload;
+import com.childcare.model.service.serviceFamily;
 import com.google.gson.Gson;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.dao.DataAccessException;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class FamilyController {
     @Resource
     private JdbcDataDAOImpl jdbcDataDAO;
+    @Resource
+    private serviceFamily service;
         
         public void setJdbcDataDAO(JdbcDataDAOImpl jdbcDataDAO) {  
         this.jdbcDataDAO = jdbcDataDAO;  
@@ -44,7 +49,7 @@ public class FamilyController {
             this.jdbcDataDAO.getDaoFamily().changePassword(family, passwd);
             return new Response();
         } catch (Exception ex) {
-            return new Response(ex.getMessage());
+            return new Response(ex);
         }
     }
 
@@ -97,9 +102,25 @@ public class FamilyController {
     {
        // Gson gson = new Gson();
        try{
-        return new Response(jdbcDataDAO.getDaoFamily().createFamily(family)+"");
+        return new ResponsePayload(Response.GENERAL_SUCC,"",jdbcDataDAO.getDaoFamily().createFamily(family));
         }
         catch (DataAccessException e)
+        {
+            return new Response(e);
+        }
+    } 
+    
+    @ResponseBody
+    @RequestMapping(value = "/password", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object tryPassword(@RequestBody Family family)
+    {
+       // Gson gson = new Gson();
+        try{
+        Family f = this.jdbcDataDAO.getDaoFamily().getFamilyInstance(family.getFid());
+        boolean flag = BCrypt.checkpw(family.getFamilyPassword(), f.getFamilyPassword());
+        return new ResponsePayload(Response.GENERAL_SUCC,"Similarity of '"+family.getFamilyPassword()+"' comparing to record in DB:",flag);
+        }
+        catch (Exception e)
         {
             return new Response(e);
         }
@@ -116,7 +137,7 @@ public class FamilyController {
             return new Response();
         }
         else
-            return new Response("Invalid FamilyID or FamilyPassword");
+            return new Response(700,"Invalid FamilyID or FamilyPassword");
         }
         catch (DataAccessException e)
         {

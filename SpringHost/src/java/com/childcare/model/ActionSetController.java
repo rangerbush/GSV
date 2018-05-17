@@ -7,6 +7,8 @@ package com.childcare.model;
 
 import com.childcare.entity.ActionSet;
 import com.childcare.entity.structure.Response;
+import com.childcare.entity.structure.ResponsePayload;
+import com.childcare.model.support.PasswordUtility;
 import javax.annotation.Resource;
 import org.springframework.dao.DataAccessException;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -32,7 +34,7 @@ public class ActionSetController {
     public void setJdbcDataDAO(JdbcDataDAOImpl jdbcDataDAO) {  
         this.jdbcDataDAO = jdbcDataDAO;  
     }  
-    private static String adminPassword = "123456";
+    
     
     /**
      * Check Admin password to create a new actionSet record
@@ -44,10 +46,10 @@ public class ActionSetController {
     @RequestMapping(value = "/register/{pw}", method = POST,produces = { APPLICATION_JSON_VALUE })
     public Object register(@PathVariable(value = "pw") String passwd, @RequestBody String desc)
     {
-        if (passwd == null ? false : passwd.equals(adminPassword))
+        if (PasswordUtility.validateAdminPassword(passwd))
         {
             try{
-        return new Response(""+this.jdbcDataDAO.getDaoActionSet().createAction(desc));  //AID of created row
+        return new ResponsePayload(Response.GENERAL_SUCC,"ActionSet Created.",this.jdbcDataDAO.getDaoActionSet().createAction(desc));  //AID of created row
             }
             catch (DataAccessException e)
             {
@@ -55,7 +57,7 @@ public class ActionSetController {
             }
         }
         else
-            return new Response("Invalid Administration Password");
+            return new Response(700,"Invalid Administration Password");
     }
     
     /**
@@ -69,7 +71,7 @@ public class ActionSetController {
     public Object fetch(@PathVariable(value = "aid") int aid)
     {
         try{
-            return new Response(this.jdbcDataDAO.getDaoActionSet().getActionInstance(aid));
+            return new ResponsePayload(Response.GENERAL_SUCC,"",this.jdbcDataDAO.getDaoActionSet().getActionInstance(aid));
         }
         catch (DataAccessException e)
         {
@@ -81,7 +83,7 @@ public class ActionSetController {
     @RequestMapping(value = "/delete/{pw}/{aid}", method = GET,produces = { APPLICATION_JSON_VALUE })
     public Object delete(@PathVariable(value = "pw") String passwd,@PathVariable(value = "aid") int aid)
     {
-        if (passwd == null ? false : passwd.equals(adminPassword))
+        if (PasswordUtility.validateAdminPassword(passwd))
         {
         try
         {
@@ -94,14 +96,14 @@ public class ActionSetController {
         }
         }
         else
-            return new Response("Invalid Administration Password");
+            return new Response(700,"Invalid Administration Password");
     }
     
     @ResponseBody
     @RequestMapping(value = "/recover/{pw}/{aid}", method = GET,produces = { APPLICATION_JSON_VALUE })
     public Object recover(@PathVariable(value = "pw") String passwd,@PathVariable(value = "aid") int aid)
     {
-        if (passwd == null ? false : passwd.equals(adminPassword))
+        if (PasswordUtility.validateAdminPassword(passwd))
         {
         try
         {
@@ -114,7 +116,7 @@ public class ActionSetController {
         }
         }
         else
-             return new Response("Invalid Administration Password");
+             return new Response(700,"Invalid Administration Password");
             
     }
     
@@ -128,7 +130,7 @@ public class ActionSetController {
     @RequestMapping(value = "/update/{pw}", method = POST,produces = { APPLICATION_JSON_VALUE })
     public Object update(@PathVariable(value = "pw") String passwd,@RequestBody ActionSet action)
     {
-        if (passwd == null ? false : passwd.equals(adminPassword))
+        if (PasswordUtility.validateAdminPassword(passwd))
         {
         try
         {
@@ -141,7 +143,7 @@ public class ActionSetController {
         }
         }
         else
-             return new Response("Invalid Administration Password");
+             return new Response(700,"Invalid Administration Password");
     }
     
     

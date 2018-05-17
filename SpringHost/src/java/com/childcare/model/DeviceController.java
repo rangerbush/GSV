@@ -8,7 +8,10 @@ package com.childcare.model;
 import com.childcare.entity.Account;
 import com.childcare.entity.Device;
 import com.childcare.entity.DeviceAudit;
+import com.childcare.entity.Family;
 import com.childcare.entity.structure.Response;
+import com.childcare.entity.wrapper.NewDeviceWrapper;
+import com.childcare.model.service.serviceDevice;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -40,11 +43,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class DeviceController {
     
      @Resource
-    private JdbcDataDAOImpl jdbcDataDAO;
+     private serviceDevice service;
     
-    public void setJdbcDataDAO(JdbcDataDAOImpl jdbcDataDAO) {  
-        this.jdbcDataDAO = jdbcDataDAO;  
-    }  
+
     
     /**
      * Register a new device
@@ -54,87 +55,109 @@ public class DeviceController {
     @ResponseBody
     @RequestMapping(value = "/register", method = POST,produces = { APPLICATION_JSON_VALUE })
     public Object register(@RequestBody Device device) {
-        try{
-         String hashed = this.jdbcDataDAO.getDaoFamily().getFamilyInstance(device.getFid().getFid()).getFamilyPassword(); //find stored hashed password with given fid
-          if (BCrypt.checkpw(device.getFid().getFamilyPassword(), hashed)) //if passes the check, do the update
-           {
-               jdbcDataDAO.getDaoDevice().createDevice(device);
-               return new Response();
-           }
-           else
-               return new Response("Invalid FamilyID or FamilyPassword");
-        }
-        catch (DataAccessException|FamilyNullException e)
-        {
-          return new Response(e);
-        }
+            return this.service.register(device);
      }
+    
+    @ResponseBody
+    @RequestMapping(value = "/register_add", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object registerAndAdd(@RequestBody NewDeviceWrapper wrapper) {
+            return this.service.registerAndAdd(wrapper);
+     }
+    
+    @ResponseBody
+    @RequestMapping(value = "/register_add/demo", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object registerAndAdd() {
+            NewDeviceWrapper wrapper = new NewDeviceWrapper();
+            wrapper.setAccess("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVSUQiOjIzLCJUeXBlIjoiQWNjZXNzIiwiZXhwIjoxNTIzNjE2Njk3LCJUVEwiOjI0LCJpYXQiOjE1MjM1MzAyOTd9.wHwjU0SLq_j_Mg_meJx0yT7ncau59bRTL1WU3uL7lfE");
+            wrapper.setDevice(new Device("deviceId"));
+            
+            return wrapper;
+    }
+    
+    //call from phones
+    /**
+     * update pulse,long&lati, timestamp; family password required.
+     * @param wrapper
+     * @return 
+     */
+    @ResponseBody
+    @RequestMapping(value = "/edit", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object edit(@RequestBody NewDeviceWrapper wrapper) {
+            return this.service.edit(wrapper);
+     }
+    
+    //call from watches
+    @ResponseBody
+    @RequestMapping(value = "/touch", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object touch(@RequestBody Device device) {
+            return this.service.touch(device);
+     }
+    
+    @ResponseBody
+    @RequestMapping(value = "/touch/help", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object touchHelp() {
+            Device device = new Device("deviceId");
+            device.setLongitude(BigDecimal.ONE);
+            device.setLatitude(BigDecimal.ONE);
+            Family family = new Family(11111115);
+            family.setFamilyPassword("passwd");
+            device.setFid(family);
+            device.setPulse(60);
+            return device;
+            
+     }
+    
+    @ResponseBody
+    @RequestMapping(value = "/edit/help", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object editHelp() {
+            NewDeviceWrapper wrapper = new NewDeviceWrapper();
+            wrapper.setAccess("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVSUQiOjIzLCJUeXBlIjoiQWNjZXNzIiwiZXhwIjoxNTIzOTUwNDQ1LCJUVEwiOjI0LCJpYXQiOjE1MjM4NjQwNDV9.gyIClvzLhgeoA3wzPncUe-jJgUf2UR2Ur4beiTs0xwQ");
+            Device device = new Device("deviceId");
+            device.setLongitude(BigDecimal.ONE);
+            device.setLatitude(BigDecimal.ONE);
+            Family family = new Family(11111115);
+            family.setFamilyPassword("passwd");
+            device.setFid(family);
+            device.setPulse(60);
+            wrapper.setDevice(device);
+            wrapper.setUid(23);
+            return wrapper;
+            
+     }
+    
     
     
     @ResponseBody
     @RequestMapping(value = "/fetch/{id}/{family}/{passwd}", method = GET,produces = { APPLICATION_JSON_VALUE })
     public Object fetch(@PathVariable(value = "id")String id,@PathVariable(value = "family")int fid,@PathVariable(value = "passwd")String passwd) {
-        
-        try{
-            System.out.println(this.jdbcDataDAO.getUtility().selfCheck());
-        if (!this.jdbcDataDAO.getUtility().Validator(passwd, fid))
-            return new Response("Invalid FamilyID or FamilyPassword");
-        Device device = (Device)jdbcDataDAO.getDaoDevice().getDeviceInstance(id);
-        if (!device.getFid().getFid().equals(fid))
-           return new Response("Invalid Family ID");
-                return new Response(device);
-        }
-
-         catch (DataAccessException e)
-         {
-          return new Response(e);
-         }
-
+        return this.service.fetch(id, fid, passwd);
     }
     
     
-        @ResponseBody
+    @ResponseBody
     @RequestMapping(value = "/update", method = POST,produces = { APPLICATION_JSON_VALUE })
     public Object update(@RequestBody Device device)
     {
-       try{
-           String hashed = this.jdbcDataDAO.getDaoFamily().getFamilyInstance(device.getFid().getFid()).getFamilyPassword(); //find stored hashed password with given fid
-           if (BCrypt.checkpw(device.getFid().getFamilyPassword(), hashed)) //if passes the check, do the update
-           {
-               jdbcDataDAO.getDaoDevice().updateDevice(device);
-               return new Response();
-           }
-           else
-               return new Response("Invalid FamilyID or FamilyPassword");
-           
-        }
-        catch (DataAccessException|FamilyNullException e)
-        {
-             return new Response(e);
-        }
-        
+            return this.service.update(device);
     }
+        
+
+    
+    @ResponseBody
+    @RequestMapping(value = "/help", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object help()
+    {
+            Device device = new Device();
+            return device;
+    }
+    
+    
     
     @ResponseBody
     @RequestMapping(value = "/delete/{id}/{family}/{passwd}", method = GET,produces = { APPLICATION_JSON_VALUE })
     public Object delete(@PathVariable(value = "id")String id,@PathVariable(value = "family")int fid,@PathVariable(value = "passwd")String passwd)
     {
-        try
-        {
-         if (!this.jdbcDataDAO.getDaoDevice().checkDIDandFID(id, fid))   
-            return new Response("Given FamilyID does not match record of given DeviceID.");
-        if (this.jdbcDataDAO.getUtility().Validator(passwd, fid))  
-            {
-                this.jdbcDataDAO.getDaoDevice().deleteDevice(id);
-                return new Response();
-            }
-        else
-             return new Response("Invalid FamilyID or FamilyPassword");
-        }
-        catch (DataAccessException e)
-        {
-             return new Response(e);
-        }
+            return this.service.delete(id, fid, passwd);
     }
     
     
@@ -142,23 +165,17 @@ public class DeviceController {
         @ResponseBody
     @RequestMapping(value = "/mail/{id}", method = GET,produces = { APPLICATION_JSON_VALUE })
     public Object mail(@PathVariable(value = "id")String id) { 
-        List<DeviceAudit> list;
-        list = jdbcDataDAO.getDaoDevice().getAudit(id);
-        Iterator it = list.iterator();
-        String text="";
-        DeviceAudit instance;
-        while (it.hasNext())
-        {
-            instance = (DeviceAudit)it.next();
-            text = text+instance.getDeviceID().getDeviceID()+","+instance.getDate()+","+instance.getLongitude().setScale(5,BigDecimal.ROUND_HALF_EVEN)+","+instance.getLatitude().setScale(5,BigDecimal.ROUND_HALF_EVEN)+"\n";
-        }
-         try {
-             Courier.sendMail(text);
-         } catch (RuntimeException e) {
-            return new Response(e);
-         } 
-          return new Response();
-
-
+            return this.service.mail(id);
     }
+    
+
+
+    /**
+     * @param service the service to set
+     */
+    public void setService(serviceDevice service) {
+        this.service = service;
+    }
+
+
 }

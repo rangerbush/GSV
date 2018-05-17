@@ -3,19 +3,17 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.childcare.model;
+package com.childcare.model.service;
+
+import com.childcare.entity.Anchorgroup;
+import com.childcare.entity.Device;
 
 /**
  *
  * @author New User
  */
-public class FamilyNullException extends Exception{
+public interface IGroupHandler {
     
-
-	public FamilyNullException(String msg)
-	{
-		super(msg);
-	}
- 
+    public boolean handle(Device device,Anchorgroup group);
     
 }

@@ -40,6 +40,15 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Family.findByFamilyPassword", query = "SELECT f FROM Family f WHERE f.familyPassword = :familyPassword")})
 public class Family implements Serializable {
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "fid")
+    private Collection<Contact> contactCollection;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "fid")
+    private Collection<Child> childCollection;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "family")
+    private Collection<AccountFamily> accountFamilyCollection;
+
     @Basic(optional = false)
     @NotNull
     @Column(name = "MaxCluster")
@@ -163,6 +172,33 @@ public class Family implements Serializable {
 
     public void setMaxCluster(int maxCluster) {
         this.maxCluster = maxCluster;
+    }
+
+    @XmlTransient
+    public Collection<AccountFamily> getAccountFamilyCollection() {
+        return accountFamilyCollection;
+    }
+
+    public void setAccountFamilyCollection(Collection<AccountFamily> accountFamilyCollection) {
+        this.accountFamilyCollection = accountFamilyCollection;
+    }
+
+    @XmlTransient
+    public Collection<Child> getChildCollection() {
+        return childCollection;
+    }
+
+    public void setChildCollection(Collection<Child> childCollection) {
+        this.childCollection = childCollection;
+    }
+
+    @XmlTransient
+    public Collection<Contact> getContactCollection() {
+        return contactCollection;
+    }
+
+    public void setContactCollection(Collection<Contact> contactCollection) {
+        this.contactCollection = contactCollection;
     }
     
 }

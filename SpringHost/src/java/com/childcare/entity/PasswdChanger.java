@@ -6,37 +6,25 @@
 package com.childcare.entity;
 
 /**
- *
+ * Use this class to change password
  * @author New User
  */
 public class PasswdChanger {
 
+
+
     /**
-     * @return the UID
+     * @return the olgPasswd
      */
-    public long getUID() {
-        return UID;
+    public String getOldPasswd() {
+        return oldPasswd;
     }
 
     /**
-     * @param UID the UID to set
+     * @param olgPasswd the olgPasswd to set
      */
-    public void setUID(long UID) {
-        this.UID = UID;
-    }
-
-    /**
-     * @return the orgPasswd
-     */
-    public String getOrgPasswd() {
-        return orgPasswd;
-    }
-
-    /**
-     * @param orgPasswd the orgPasswd to set
-     */
-    public void setOrgPasswd(String orgPasswd) {
-        this.orgPasswd = orgPasswd;
+    public void setOldPasswd(String olgPasswd) {
+        this.oldPasswd = olgPasswd;
     }
 
     /**
@@ -52,20 +40,59 @@ public class PasswdChanger {
     public void setNewPasswd(String newPasswd) {
         this.newPasswd = newPasswd;
     }
-    private long UID;
-    private String orgPasswd;
+    private long uid;
+    private String oldPasswd;
     private String newPasswd;
+    private String auth;
     public PasswdChanger()
     {
        
     }
     
-    public PasswdChanger(long uid,String oP,String nP)
+    /**
+     * 
+     * @param uid Account UID
+     * @param oP old password. Only necessary while auth is used to hold AccessToken
+     * @param nP new password
+     * @param auth PIN or AccessToken
+     */
+    public PasswdChanger(long uid,String oP,String nP,String auth)
     {
-        this.UID = uid;
+        this.uid = uid;
         this.newPasswd = nP;
-        this.orgPasswd = oP;
+        this.oldPasswd = oP;
+        this.auth = auth;
     }
+
+    /**
+     * @return the auth
+     */
+    public String getAuth() {
+        return auth;
+    }
+
+    /**
+     * @param auth the auth to set
+     */
+    public void setAuth(String auth) {
+        this.auth = auth;
+    }
+
+    /**
+     * @return the uid
+     */
+    public long getUid() {
+        return uid;
+    }
+
+    /**
+     * @param uid the uid to set
+     */
+    public void setUid(long uid) {
+        this.uid = uid;
+    }
+
+ 
     
     
 }

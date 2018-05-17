@@ -2,6 +2,7 @@ package com.childcare.entity;
 
 import com.childcare.entity.Account;
 import com.childcare.entity.ActionSet;
+import com.childcare.entity.ActionTaken;
 import com.childcare.entity.Anchor;
 import com.childcare.entity.Family;
 import java.math.BigDecimal;
@@ -10,7 +11,7 @@ import javax.persistence.metamodel.CollectionAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.StaticMetamodel;
 
-@Generated(value="EclipseLink-2.5.2.v20140319-rNA", date="2018-03-05T19:28:43")
+@Generated(value="EclipseLink-2.5.2.v20140319-rNA", date="2018-05-14T00:39:34")
 @StaticMetamodel(Anchorgroup.class)
 public class Anchorgroup_ { 
 
@@ -27,6 +28,7 @@ public class Anchorgroup_ {
     public static volatile SingularAttribute<Anchorgroup, Account> uid;
     public static volatile SingularAttribute<Anchorgroup, String> groupName;
     public static volatile SingularAttribute<Anchorgroup, Integer> maxSeq;
+    public static volatile CollectionAttribute<Anchorgroup, ActionTaken> actionTakenCollection;
     public static volatile SingularAttribute<Anchorgroup, BigDecimal> exLong;
     public static volatile SingularAttribute<Anchorgroup, BigDecimal> inLong;
 

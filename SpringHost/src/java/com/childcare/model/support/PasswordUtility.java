@@ -18,11 +18,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class PasswordUtility {
     @Resource  
    private JdbcTemplate jdbcTemplate;
-    
+   private static final String adminPassword = "123456";
 
     public String selfCheck()
     {
         return "Utility Self Check: jdbc isNull --> "+(this.jdbcTemplate == null)+"";
+    }
+    
+    public static boolean validateAdminPassword(String psw)
+    {
+        return (adminPassword == null ? psw == null : adminPassword.equals(psw));
     }
     
     /**

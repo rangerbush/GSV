@@ -43,6 +43,29 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Account.findByDiscard", query = "SELECT a FROM Account a WHERE a.discard = :discard")})
 public class Account implements Serializable {
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "uid")
+    private Collection<Contact> contactCollection;
+
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 60)
+    @Column(name = "PIN")
+    private String pin;
+
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 30)
+    @Column(name = "FirstName")
+    private String firstName;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 30)
+    @Column(name = "LastName")
+    private String lastName;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "account")
+    private Collection<AccountFamily> accountFamilyCollection;
+
     @ManyToMany(mappedBy = "accountCollection")
     private Collection<Family> familyCollection;
 
@@ -55,12 +78,7 @@ public class Account implements Serializable {
     private Long uid;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 30)
-    @Column(name = "UserName")
-    private String userName;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 30)
+    @Size(min = 1, max = 60)
     @Column(name = "Password")
     private String password;
     @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
@@ -85,9 +103,8 @@ public class Account implements Serializable {
         this.uid = uid;
     }
 
-    public Account(Long uid, String userName, String password, boolean discard) {
+    public Account(Long uid, String password, boolean discard) {
         this.uid = uid;
-        this.userName = userName;
         this.password = password;
         this.discard = discard;
     }
@@ -100,13 +117,7 @@ public class Account implements Serializable {
         this.uid = uid;
     }
 
-    public String getUserName() {
-        return userName;
-    }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
 
     public String getPassword() {
         return password;
@@ -133,7 +144,7 @@ public class Account implements Serializable {
     }
 
     public boolean getDiscard() {
-        return discard;
+        return isDiscard();
     }
 
     public void setDiscard(boolean discard) {
@@ -181,6 +192,55 @@ public class Account implements Serializable {
 
     public void setFamilyCollection(Collection<Family> familyCollection) {
         this.familyCollection = familyCollection;
+    }
+
+    @XmlTransient
+    public Collection<AccountFamily> getAccountFamilyCollection() {
+        return accountFamilyCollection;
+    }
+
+    public void setAccountFamilyCollection(Collection<AccountFamily> accountFamilyCollection) {
+        this.accountFamilyCollection = accountFamilyCollection;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    /**
+     * @return the discard
+     */
+    public boolean isDiscard() {
+        return discard;
+    }
+
+    public String getPin() {
+        return pin;
+    }
+
+    public void setPin(String pin) {
+        this.pin = pin;
+    }
+
+    @XmlTransient
+    public Collection<Contact> getContactCollection() {
+        return contactCollection;
+    }
+
+    public void setContactCollection(Collection<Contact> contactCollection) {
+        this.contactCollection = contactCollection;
     }
     
 }

@@ -7,11 +7,18 @@ package com.childcare.model.DAO;
 
 import com.childcare.entity.Anchor;
 import com.childcare.entity.AnchorPK;
+import com.childcare.entity.Anchorgroup;
 import com.childcare.model.JdbcDataDAOImpl;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Resource;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.dao.DataAccessException;
@@ -53,7 +60,7 @@ public class DAOAnchor {
     public Integer createAnchor(List<Anchor> list) throws DataAccessException
     {
        // String query = "select `anchorgroup`.`MaxSeq` FROM `GSV_DB`.`anchorgroup` WHERE `anchorgroup`.`GID` ="+anchor.getAnchorPK().getGid()+";";
-        try{
+ 
          //  Integer maxSeq = this.jdbcTemplate.queryForObject(query, Integer.class);
             String prepare = "select `anchorgroup`.`MaxSeq` FROM `GSV_DB`.`anchorgroup` WHERE `anchorgroup`.`GID` ="+list.get(0).getAnchorPK().getGid()+";";
             Integer seq = this.jdbcTemplate.queryForObject(prepare, Integer.class);
@@ -83,13 +90,10 @@ public class DAOAnchor {
            // System.out.println(sql[1]);
             jdbcTemplate.batchUpdate(sql);
             return seq;
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
+
         
     }
+    
     
     public Anchor getAnchorInstance(Long GID,int Seq) throws DataAccessException
     {
@@ -99,27 +103,90 @@ public class DAOAnchor {
                      "    `anchor`.`Latitude`,\n" +
                      "    `anchor`.`Radius`\n" +
                      "FROM `GSV_DB`.`anchor` WHERE `anchor`.`GID` = "+GID+" and `anchor`.`SeqID` = "+Seq+" ;";
-        try{
             return (Anchor)this.jdbcTemplate.queryForObject(sql, new AnchorMapper());
-        }
-        catch (DataAccessException e)
+    }
+    
+    public List<Anchor> findByGID(Long GID) throws DataAccessException
+    {
+        String sql = "SELECT `anchor`.`GID`,\n" +
+                     "    `anchor`.`SeqID`,\n" +
+                     "    `anchor`.`Longitude`,\n" +
+                     "    `anchor`.`Latitude`,\n" +
+                     "    `anchor`.`Radius`\n" +
+                     "FROM `GSV_DB`.`anchor` WHERE `anchor`.`GID` = "+GID+"  ;";
+        List<Anchor> list = this.jdbcTemplate.query(sql,new AnchorMapper());
+        return list;
+    }
+        
+    public List<Anchor> findByMultiGID(List<Long> gList) throws DataAccessException
+    {
+        StringBuilder content = new StringBuilder();        
+        Iterator it = gList.iterator();
+        if (it.hasNext())
         {
-            throw e;
+            content.append((Long)it.next());
         }
+        while(it.hasNext())
+        {
+            content.append(",");
+            content.append((Long)it.next());           
+        } 
+        String sql = "SELECT `anchor`.`GID`,\n" +
+                     "    `anchor`.`SeqID`,\n" +
+                     "    `anchor`.`Longitude`,\n" +
+                     "    `anchor`.`Latitude`,\n" +
+                     "    `anchor`.`Radius`\n" +
+                     "FROM `GSV_DB`.`anchor` WHERE `anchor`.`GID`IN ( "+content+" ) ;";
+        return  this.jdbcTemplate.query(sql,new AnchorMapper());
+    }
+    
+        public Map<Integer,List<Anchor>> findByMultiGroup(List<Anchorgroup> gList) throws DataAccessException
+    {
+        StringBuilder content = new StringBuilder();        
+        Iterator it = gList.iterator();
+        HashSet<Integer> set = new HashSet();
+        List<Anchor> list;
+        Anchorgroup ag;
+        Integer type;
+        String sql;
+        if (it.hasNext())
+        {
+            ag = (Anchorgroup)it.next();
+            content.append(ag.getGid());
+            set.add(ag.getType());
+        }
+        while(it.hasNext())
+        {
+            ag = (Anchorgroup)it.next();
+            content.append(",");
+            content.append(ag.getGid());
+            set.add(ag.getType());
+        } 
+        Map<Integer,List<Anchor>> map = new HashMap();
+        it = set.iterator();
+        while (it.hasNext())
+        {
+            type = (Integer)it.next();
+            sql = "SELECT `anchor`.`GID`,\n" +
+                     "    `anchor`.`SeqID`,\n" +
+                     "    `anchor`.`Longitude`,\n" +
+                     "    `anchor`.`Latitude`,\n" +
+                     "    `anchor`.`Radius`\n" +
+                     "FROM `GSV_DB`.`anchor` LEFT JOIN `GSV_DB`.`anchorgroup` ON `anchor`.`GID` = `anchorgroup`.`GID`"
+                    + " WHERE `anchor`.`GID`IN ( "+content+" ) and `anchorgroup`.`Type` = "+type+";";
+            list =  this.jdbcTemplate.query(sql,new AnchorMapper()); 
+            map.put(type, list);
+        }
+        return map;
     }
     
     public List<Anchor> getAllAnchorInstance() throws DataAccessException
     {
         String sql = "select * from  `GSV_DB`.`anchor`";
-        try 
-        {
+
                 List<Anchor> list = this.jdbcTemplate.query(sql,new AnchorMapper());
                 return list;
-        }
-               catch (DataAccessException e)
-        {
-            throw e;
-        }
+
     }
     
     public void deleteAnchor(List<Anchor> list)throws DataAccessException
@@ -134,20 +201,13 @@ public class DAOAnchor {
         String sql = "DELETE FROM `GSV_DB`.`anchor`\n" +
                      "WHERE (`anchor`.`GID` = "+list.get(0).getAnchorPK().getGid()+") and (`anchor`.`SeqID` in ("+sb.toString()+"));";
         //System.out.println(sql);
-        try{
         this.jdbcTemplate.execute(sql);
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
     }
 
     public void updateAnchor(List<Anchor> list)throws DataAccessException
     {
         
-        try
-        {
+
             String prepare = "select `anchorgroup`.`MaxSeq` FROM `GSV_DB`.`anchorgroup` WHERE `anchorgroup`.`GID` ="+list.get(0).getAnchorPK().getGid()+";";
             Integer seq = this.jdbcTemplate.queryForObject(prepare, Integer.class);
             //anchors in list are in the same group and MaxSeq is obtained
@@ -162,11 +222,8 @@ public class DAOAnchor {
                          "`Radius` = <{Radius: }>\n" +
                          "WHERE `GID` = <{expr}> AND `SeqID` = <{expr}>;";
             }
-        }
-        catch (DataAccessException e)
-        {
-            throw e;
-        }
+        
+
         }
 
     

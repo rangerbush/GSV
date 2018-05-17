@@ -8,6 +8,7 @@ package com.childcare.entity;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Date;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -18,7 +19,10 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -38,6 +42,17 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Device.findByLatitude", query = "SELECT d FROM Device d WHERE d.latitude = :latitude")
     , @NamedQuery(name = "Device.findByPulse", query = "SELECT d FROM Device d WHERE d.pulse = :pulse")})
 public class Device implements Serializable {
+
+    @OneToOne(mappedBy = "deviceID")
+    private Child child;
+
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "Status")
+    private int status;
+    @Column(name = "TimeStamp")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date timeStamp;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "deviceID")
     private Collection<DeviceAudit> deviceAuditCollection;
@@ -61,6 +76,10 @@ public class Device implements Serializable {
     private String deviceID;
     @Column(name = "pulse")
     private Integer pulse;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "Cluster")
+    private int cluster;
     @JoinColumn(name = "FID", referencedColumnName = "fid")
     @ManyToOne(optional = false)
     private Family fid;
@@ -101,6 +120,14 @@ public class Device implements Serializable {
 
     public void setFid(Family fid) {
         this.fid = fid;
+    }
+    
+    public int getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(int cluster) {
+        this.cluster = cluster;
     }
 
     @Override
@@ -151,6 +178,30 @@ public class Device implements Serializable {
 
     public void setDeviceAuditCollection(Collection<DeviceAudit> deviceAuditCollection) {
         this.deviceAuditCollection = deviceAuditCollection;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public Date getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(Date timeStamp) {
+        this.timeStamp = timeStamp;
+    }
+
+    public Child getChild() {
+        return child;
+    }
+
+    public void setChild(Child child) {
+        this.child = child;
     }
     
 }
