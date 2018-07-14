@@ -38,7 +38,7 @@ public class MapUtils {
         Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));  
        s = s * EARTH_RADIUS;  
        s = Math.round(s * 1000);  
-       System.out.println("MapUtility:----------\nLocation 1  Lat "+lat1+"  Long "+lng1+"\nLocation2 Lat "+lat2+"   Long "+lng2+"\nDistance = "+s);
+       System.out.println("MapUtil GetDistance:----------\nLocation 1  Lat "+lat1+"  Long "+lng1+"\nLocation2 Lat "+lat2+"   Long "+lng2+"\nDistance = "+s);
        return s;  
     }  
     

@@ -43,6 +43,19 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Account.findByDiscard", query = "SELECT a FROM Account a WHERE a.discard = :discard")})
 public class Account implements Serializable {
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "creator")
+    private Collection<Child> childCollection;
+
+    @Size(max = 200)
+    @Column(name = "avatar")
+    private String avatar;
+
+    @ManyToMany(mappedBy = "accountCollection")
+    private Collection<Supervisor> supervisorCollection;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "uid")
+    private Collection<DeviceToken> deviceTokenCollection;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "uid")
     private Collection<Contact> contactCollection;
 
@@ -241,6 +254,41 @@ public class Account implements Serializable {
 
     public void setContactCollection(Collection<Contact> contactCollection) {
         this.contactCollection = contactCollection;
+    }
+
+    @XmlTransient
+    public Collection<DeviceToken> getDeviceTokenCollection() {
+        return deviceTokenCollection;
+    }
+
+    public void setDeviceTokenCollection(Collection<DeviceToken> deviceTokenCollection) {
+        this.deviceTokenCollection = deviceTokenCollection;
+    }
+
+    @XmlTransient
+    public Collection<Supervisor> getSupervisorCollection() {
+        return supervisorCollection;
+    }
+
+    public void setSupervisorCollection(Collection<Supervisor> supervisorCollection) {
+        this.supervisorCollection = supervisorCollection;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    @XmlTransient
+    public Collection<Child> getChildCollection() {
+        return childCollection;
+    }
+
+    public void setChildCollection(Collection<Child> childCollection) {
+        this.childCollection = childCollection;
     }
     
 }

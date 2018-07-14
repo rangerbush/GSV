@@ -8,6 +8,7 @@ package com.childcare.model.support;
 import com.childcare.entity.Anchor;
 import java.math.BigDecimal;
 import java.util.List;
+import polygonutil.Vector;
 
 public class SpatialRelationUtil {  
   
@@ -50,29 +51,29 @@ public class SpatialRelationUtil {
         return (nCross % 2 == 1);  
     }  
     
-      public static boolean isPolygonContainsPoint(List<Anchor> mPoints, BigDecimal Long,BigDecimal Lat) {  
+      public static boolean isPolygonContainsPoint(List<Vector> mPoints, double east,double north) {  
         int nCross = 0;  
         for (int i = 0; i < mPoints.size(); i++) {  
-            Anchor p1 = mPoints.get(i);  
-            Anchor p2 = mPoints.get((i + 1) % mPoints.size());  
+            Vector p1 = mPoints.get(i);  
+            Vector p2 = mPoints.get((i + 1) % mPoints.size());  
             // 取多边形任意一个边,做点point的水平延长线,求解与当前边的交点个数  
             // p1p2是水平线段,要么没有交点,要么有无限个交点  
-            if (p1.getLatitude() == p2.getLatitude())  
+            if (p1.y == p2.y)  
                 continue;  
             // point 在p1p2 底部 --> 无交点  
-            if (Lat.compareTo(p1.getLatitude().min(p2.getLatitude()))<0)  
+            if (north < Math.min(p1.y, p2.y))  
                 continue;  
             // point 在p1p2 顶部 --> 无交点  
-            if (Lat.compareTo(p1.getLatitude().max(p2.getLatitude()))>=0)  
+            if (north >= Math.max(p1.y, p2.y))  
                 continue;  
             // 求解 point点水平线与当前p1p2边的交点的 X 坐标  
-            BigDecimal x = Lat.subtract(p1.getLatitude()).multiply(p2.getLongitude().subtract(p1.getLongitude())).divide(p2.getLatitude().subtract(p1.getLatitude())).add(p1.getLongitude());
-            //double x = (point.y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;  
-            if (x.compareTo(Long)>0) // 当x=point.x时,说明point在p1p2线段上  
+            double x = (north - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;  
+            if (x > east) // 当x=point.x时,说明point在p1p2线段上  
                 nCross++; // 只统计单边交点  
         }  
         // 单边交点为偶数，点在多边形之外 ---  
         return (nCross % 2 == 1);  
+          
     }  
   
     /** 

@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Resource;
 import org.mindrot.jbcrypt.BCrypt;
@@ -42,11 +43,7 @@ public class DAOFamily {
      */
     private Family familyNormolizer(Family fa)
     {
-        System.out.println("Raw Password:"+fa.getFamilyPassword());
         fa.setFamilyPassword(BCrypt.hashpw(fa.getFamilyPassword(), BCrypt.gensalt()));
-        System.out.println("Bcrypted Password:"+fa.getFamilyPassword());
-        if (fa.getMaxCluster()<1)
-            fa.setMaxCluster(1);
         return fa;
         /*
         if (BCrypt.checkpw(candidate, hashed))
@@ -71,7 +68,7 @@ public class DAOFamily {
             family.setFid(arg0.getInt("fid"));  
             family.setFamilyName(arg0.getString("familyName"));  
             family.setFamilyPassword(arg0.getString("FamilyPassword"));  
-            family.setMaxCluster(arg0.getInt("MaxCluster"));
+            family.setCreator(new Account(arg0.getLong("Creator")));
             return family;  
         }  
           
@@ -96,6 +93,7 @@ public class DAOFamily {
             instance.setStatus(arg0.getInt("status"));
             instance.setFamily(new Family(arg0.getInt("FID")));
             instance.setAccount(new Account(arg0.getLong("UID")));
+            instance.setIsOwner(arg0.getInt("isOwner"));
             return instance;  
         }  
           
@@ -106,10 +104,10 @@ public class DAOFamily {
     * @param fid
     * @return 
     */
-    public Integer findOwner(int fid)
+    public List<Long> findOwner(int fid)
     {
-        String sql = "select `UID` from `GSV_DB`.`Account_Family` where `FID` = "+fid+" and `status` = 0;";  
-        return jdbcTemplate.queryForInt(sql);
+        String sql = "select `UID` from `GSV_DB`.`Account_Family` where `FID` = "+fid+";";  
+        return jdbcTemplate.query(sql, (ResultSet arg0, int arg1) -> arg0.getLong("UID"));
     }
     
     
@@ -127,16 +125,10 @@ public class DAOFamily {
          return list;
     }
     
-    public List<Family> findOwnedFamilies(long uid)
-    {
-        String sql = "select * from `GSV_DB`.`family` where `FID` IN (select `FID` from `GSV_DB`.`Account_Family` where `UID` = "+uid+" and `status` = 0) ;";
-         List<Family> list = this.jdbcTemplate.query(sql,new FamilyMapper());
-         return list;
-    }
     
     public Family findFamilyByGID(int gid)
     {
-        String sql = "select * from `GSV_DB`.`family` where `FID` = (select `FID` from `GSV_DB`.`anchorgroup` where `GID` = "+gid+") ;";
+        String sql = "select * from `GSV_DB`.`family` where `FID` = (select `FID` from `GSV_DB`.`Child` where `CID` = (Select `CID` from `anchorgroup` where `GID` = "+gid+")) ;";
          Family family = (Family)this.jdbcTemplate.queryForObject(sql, new FamilyMapper());
          return family;
     }
@@ -147,12 +139,14 @@ public class DAOFamily {
         return (Family)this.jdbcTemplate.queryForObject(sql, new FamilyMapper());
     }
     
-    public void addRelationship(int fid,long uid,int status)
+
+    
+    public void addRelationship(int fid,long uid,int status,int ownership)
     {
         String sql = "INSERT INTO `GSV_DB`.`Account_Family`\n" +
-                    "(`FID`,`UID`,`status`)\n" +
+                    "(`FID`,`UID`,`status`,`isOwner`)\n" +
                     "VALUES\n" +
-                    "("+fid+","+uid+","+status+");";
+                    "("+fid+","+uid+","+status+","+ownership+");";
         this.jdbcTemplate.execute(sql);
     }
     
@@ -172,15 +166,16 @@ public class DAOFamily {
       /**
        * 
        * @param fa
+     * @param creator
        * @return
        * @throws DataAccessException 
        */
-     public int createFamily(Family fa) throws DataAccessException
+     public int createFamily(Family fa,long creator) throws DataAccessException
      {
          Family family = this.familyNormolizer(fa);
-         String sql = "INSERT INTO `GSV_DB`.`family` (`familyName`, `FamilyPassword`,`MaxCluster`)" +
+         String sql = "INSERT INTO `GSV_DB`.`family` (`familyName`, `FamilyPassword`,`Creator`)" +
                         "VALUES" +
-                        "('"+family.getFamilyName()+"','"+family.getFamilyPassword()+"',"+family.getMaxCluster()+");";
+                        "('"+family.getFamilyName().replaceAll("\'", "\\\\'")+"','"+family.getFamilyPassword()+"',"+creator+");";
                         //"(?,?);\n";              
         KeyHolder keyHolder = new GeneratedKeyHolder();             
         try
@@ -211,6 +206,23 @@ public class DAOFamily {
         return (Family)jdbcTemplate.queryForObject(sql, params, types, new FamilyMapper());  
     }
      
+    public List<Family> getFamilyInstances(List<Integer> idList)
+    {
+        if (idList.isEmpty())
+            throw new DataAccessException("Input list is empty."){};
+                StringBuilder sb = new StringBuilder();
+        Iterator<Integer> it = idList.iterator();
+        while(it.hasNext())
+        {
+            sb.append(",").append(it.next());
+        }
+        sb.deleteCharAt(0);
+        String sql = "select * from family where fid IN ("+sb.toString()+")";
+        List<Family> list = this.jdbcTemplate.query(sql, new FamilyMapper());
+        list.stream().forEach(f->f.setFamilyPassword("******"));
+        return list;
+    }
+    
     /**
      * Allow to update family name with given FID and correct password
      * @param family
@@ -223,8 +235,7 @@ public class DAOFamily {
         Family normF = this.familyNormolizer(family); //passwd is now hashed
         String sql = "UPDATE `GSV_DB`.`family`\n" +
                      "SET\n" +
-                     "`familyName` = '"+normF.getFamilyName()+"',\n" +
-                     "`MaxCluster` = "+normF.getMaxCluster()+"\n"+
+                     "`familyName` = '"+normF.getFamilyName()+"' \n" +
                      "WHERE `fid` = "+normF.getFid()+";\n";
               // System.out.println(sql);
               /*
@@ -279,6 +290,21 @@ public class DAOFamily {
         String sql = "DELETE FROM `GSV_DB`.`family`\n" +
                      "WHERE `family`.`fid` = "+fid+";";
         this.jdbcTemplate.execute(sql);
+    }
+    
+    public List<AccountFamily> findByMultiFID(List<Integer> fidList)
+    {
+        if (fidList.isEmpty())
+            throw new DataAccessException("Input list of families is empty."){};
+        StringBuilder sb = new StringBuilder();
+        Iterator<Integer> it = fidList.iterator();
+        while (it.hasNext())
+        {
+            sb.append(",").append(it.next());
+        }
+        sb.deleteCharAt(0);
+        String sql = "select * from `GSV_DB`.`Account_Family` where `Account_Family`.`FID` in ("+sb.toString()+");";
+        return this.jdbcTemplate.query(sql,new FandAMapper());
     }
     
 }

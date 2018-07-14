@@ -25,12 +25,12 @@ public class AccountFamilyPK implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "UID")
-    private int uid;
+    private long uid;
 
     public AccountFamilyPK() {
     }
 
-    public AccountFamilyPK(int fid, int uid) {
+    public AccountFamilyPK(int fid, long uid) {
         this.fid = fid;
         this.uid = uid;
     }
@@ -43,7 +43,7 @@ public class AccountFamilyPK implements Serializable {
         this.fid = fid;
     }
 
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 

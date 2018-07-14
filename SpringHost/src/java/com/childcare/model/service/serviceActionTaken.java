@@ -10,7 +10,7 @@ import com.childcare.entity.ActionTakenPK;
 import com.childcare.entity.structure.Response;
 import com.childcare.entity.structure.ResponsePayload;
 import com.childcare.model.JdbcDataDAOImpl;
-import com.childcare.model.NullException;
+import com.childcare.model.exception.NullException;
 import com.childcare.model.support.PasswordUtility;
 import java.util.List;
 import javax.annotation.Resource;

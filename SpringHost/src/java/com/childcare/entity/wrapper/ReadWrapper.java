@@ -10,14 +10,14 @@ package com.childcare.entity.wrapper;
  * @author New User
  */
 public class ReadWrapper {
-    private int uid;
+    private long uid;
     private String access;
     
     public ReadWrapper()
     {
         
     }
-    public ReadWrapper(int UID, String access)
+    public ReadWrapper(long UID, String access)
     {
         this.access = access;
         this.uid=UID;
@@ -26,14 +26,14 @@ public class ReadWrapper {
     /**
      * @return the UID
      */
-    public int getUID() {
+    public long getUID() {
         return uid;
     }
 
     /**
      * @param UID the UID to set
      */
-    public void setUID(int UID) {
+    public void setUID(long UID) {
         this.uid = UID;
     }
 

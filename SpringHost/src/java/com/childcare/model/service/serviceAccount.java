@@ -16,9 +16,12 @@ import com.childcare.entity.PasswdChanger;
 import com.childcare.entity.RefreshToken;
 import com.childcare.entity.MailandPsw;
 import com.childcare.entity.structure.Response;
+import static com.childcare.entity.structure.Response.GENERAL_SUCC;
 import com.childcare.entity.structure.ResponsePayload;
 import com.childcare.model.JdbcDataDAOImpl;
 import com.childcare.model.support.JsonWebTokenUtil;
+import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +32,8 @@ import javax.mail.MessagingException;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 @Service("serviceAccount")
@@ -39,23 +44,26 @@ import org.springframework.web.servlet.ModelAndView;
 public class serviceAccount {
     @Resource
     private JdbcDataDAOImpl jdbcDataDAO;
-    private final String BASE_URL = "http://18.218.147.28:8080/SpringHost/";
+    @Resource
+    private ServiceDeviceToken serviceToken;
+    private final String BASE_URL = "http://safetyvillage.top:8080/SpringHost/";
     private final String BASE_URL_TEST = "http://localhost:8080/SpringHost/";
-            
-    public Object createAccount(Account account)
+    private final String BASE_PATH = "/mnt/efs/upload"+  File.separator;
+         
+    @Transactional
+    public Object createAccount(Account account,String token) throws DataAccessException
     {
-        try{
         String passwd = BCrypt.hashpw(account.getPassword(), BCrypt.gensalt());
         account.setPassword(passwd);
         passwd = BCrypt.hashpw(account.getPin(), BCrypt.gensalt());
         account.setPin(passwd);
         long uid = this.jdbcDataDAO.getDaoAccount().createAccount(account);
-        return new ResponsePayload(Response.GENERAL_SUCC,"Account Created.",uid);
-        }
-        catch (DataAccessException | IllegalArgumentException e)
-        {
-            return new Response(e);
-        }
+        this.serviceToken.register(uid,token);
+        String accessToken = JsonWebTokenUtil.accessToken(uid);
+        HashMap<String,Object> map = new HashMap();
+        map.put("access", accessToken);
+        map.put("uid", uid);
+        return new ResponsePayload(Response.GENERAL_SUCC,"Account Created.",map);
     }
     
     /**
@@ -63,9 +71,10 @@ public class serviceAccount {
      * @param identity
      * @return 
      */
+    @Transactional
     public Object signIn(MailandPsw identity)
     {
-        try{
+
             Account account = this.jdbcDataDAO.getDaoAccount().getAccountInstanceByEmail(identity.getEmail()); //根据邮箱和密码明文获取account实例
             if (BCrypt.checkpw(identity.getPassword(), account.getPassword())) //验证实例中密码密文和明文加密是否符合
             {
@@ -77,17 +86,13 @@ public class serviceAccount {
                  map.put("access", accessToken);
                  map.put("refresh", refreshToken);
                  map.put("uid", account.getUid());
+                 this.serviceToken.register(account.getUid(),identity.getDevice() );
                  return new ResponsePayload(Response.GENERAL_SUCC,"You are now signed in.",map);  //生成回执信息，状态200，payload中放包含AccessToken和RefreshToken的map
             }
             else
             {
                 return new Response(Response.ERROR_ACCOUNT_PASSWORD,"Invalid UID or Password is not correct.");  //密码验证失败，
             }
-        }
-        catch (RuntimeException e) 
-        {
-             return new Response(e);
-        }
     }
     
     public Object forgetPasswordViaMail(Map<String,String> map)
@@ -102,16 +107,16 @@ public class serviceAccount {
         String hashed = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         String token  = JsonWebTokenUtil.resetRequestToken(email, hashed);
         //String FINAL_URL = this.BASE_URL_TEST+"account/auth/"+token;
-        String FINAL_URL = this.BASE_URL+"account/auth";
+        String FINAL_URL = this.BASE_URL+"account/portal";
         String msg = "Dear "+account.getFirstName()+" "+account.getLastName()+":\n\n"
                 + "You requested to reset your GSV password recently. Please click the following link to complete the last step."
                 + " If you have no idea what this is about, please ignore this email. Thank you.\n\n"
                 + FINAL_URL
                 + "\n\nPlease paste the following secret key into textbox you find in the page from the link above."
                 + "\n\n"+token;
-        Courier.resetPassword(msg, email);
+        Courier.resetPasswordViaAliYun(msg, email);
         return new Response(Response.GENERAL_SUCC,"Reset link has been sent to specified email address. Click link to apply new password within 30 minutes.");
-        } catch (RuntimeException | MessagingException | UnsupportedEncodingException e)
+        } catch (RuntimeException | MessagingException  e)
         {
             return new Response(e);
         }
@@ -189,6 +194,9 @@ public class serviceAccount {
     
     public Object changePassword(PasswdChanger pc)
     {
+        String newPassword = BCrypt.hashpw(pc.getNewPasswd(), BCrypt.gensalt());
+        //System.out.println(newPassword);
+        pc.setNewPasswd(newPassword);
         if (pc.getAuth() == null | pc.getOldPasswd() ==null | pc.getNewPasswd() == null )
             return new Response(Response.ERROR_NULL_FIELD,"one or more fields in input are null, which is not acceptable."); //请求中有null域
         try{
@@ -200,7 +208,7 @@ public class serviceAccount {
         if (!BCrypt.checkpw(pc.getOldPasswd(), oldP))
             return new Response(Response.ERROR_ACCOUNT_PASSWORD,"Provided Old password doest match record."); //旧密码和数据库不符
         this.jdbcDataDAO.getDaoAccount().updatePassword(pc);
-        return new Response(Response.GENERAL_SUCC,"");
+        return new Response(Response.GENERAL_SUCC,"OK");
         }
         catch (RuntimeException e)
         {
@@ -288,6 +296,61 @@ public class serviceAccount {
         }
     }
     
+    /**
+     *
+     * @param uid
+     * @param access
+     * @param inputFile
+     * @return
+     * @throws JWTVerificationException
+     * @throws UnsupportedEncodingException
+     */
+    @Transactional
+    public Object updateAvatar(long uid, String access, MultipartFile inputFile) throws JWTVerificationException, UnsupportedEncodingException
+    {
+        if(!JsonWebTokenUtil.checkAccess(uid, access)) 
+            return new Response(Response.ERROR_TOKEN_ACCESS_UID,"AccessToken's authoration failed. UID in token does not match the request one or this is not an access token.");
+        if (inputFile==null) {
+            return new Response(Response.EXCEPTION_NULL,"uploaded file is null or empty.");
+        } else {
+        }
+        String originalFilename = inputFile.getOriginalFilename();
+        String suffix = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        if (!(suffix.equalsIgnoreCase("jpg")|suffix.equalsIgnoreCase("gif")|suffix.equalsIgnoreCase("png")|suffix.equalsIgnoreCase("jpeg")))
+            return new Response(Response.ERROR_INVALID_FILE_TYPE,"Only JPG, PNG and GIF are accepted.");
+        String finalName = /*context.getRealPath("/WEB-INF/uploaded")*/ this.BASE_PATH+"avatar"+File.separator+ uid+ "."+ suffix;
+        String url = this.BASE_URL+"upload/avatar"+File.separator+ uid+ "."+ suffix;
+        try {
+           //鉴权通过，开始业务
+           //先生成hash过的文件名
+           //部署目标文件
+           File destinationFile = new File(finalName);
+           inputFile.transferTo(destinationFile);      
+           this.jdbcDataDAO.getDaoAccount().updateAvatar(uid,uid+ "."+ suffix);
+        } catch (IOException ex) {
+            Logger.getLogger(serviceChild.class.getName()).log(Level.SEVERE, null, ex);
+            return new Response(Response.EXCEPTION_IO,"IO exception happened. Failed to save uploaded file.");
+        }
+        return new ResponsePayload(Response.GENERAL_SUCC,"Image updated.",url);
+    }
+    
+    /**
+     *
+     * @param uid
+     * @param access
+     * @return
+     */
+    public Object deleteAvatar(long uid,String access)
+    {
+        try {
+            if(!JsonWebTokenUtil.checkAccess(uid, access))
+                return new Response(Response.ERROR_TOKEN_ACCESS_UID,"AccessToken's authoration failed. UID in token does not match the request one or this is not an access token.");
+            this.jdbcDataDAO.getDaoAccount().updateAvatar(uid, this.jdbcDataDAO.getDaoAccount().defaultFileName);
+            return new Response(GENERAL_SUCC,"Avatar deleted.");
+        } catch (JWTVerificationException|UnsupportedEncodingException|DataAccessException ex) {
+            return new Response(ex);
+        } 
+    }
     
             
             

@@ -11,7 +11,7 @@ package com.childcare.entity.wrapper;
  */
 public class ChildDeleteWrapper {
     private int cid;
-    private int uid;
+    private long uid;
     private String token;
     private String family_password;
     public ChildDeleteWrapper()
@@ -19,7 +19,7 @@ public class ChildDeleteWrapper {
 
     }
     
-    public ChildDeleteWrapper(int cid,int uid,String token,String password)
+    public ChildDeleteWrapper(int cid,long uid,String token,String password)
     {
         this.cid = cid;
         this.uid = uid;
@@ -44,14 +44,14 @@ public class ChildDeleteWrapper {
     /**
      * @return the uid
      */
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 
     /**
      * @param uid the uid to set
      */
-    public void setUid(int uid) {
+    public void setUid(long uid) {
         this.uid = uid;
     }
 

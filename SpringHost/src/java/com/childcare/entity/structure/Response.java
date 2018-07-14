@@ -6,11 +6,19 @@
 package com.childcare.entity.structure;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.childcare.model.NullException;
+import com.childcare.model.exception.NullException;
+import com.childcare.model.exception.RedAlert;
+import com.childcare.model.exception.YellowAlert;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import javax.mail.MessagingException;
+import org.springframework.dao.CleanupFailureDataAccessException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.datasource.init.CannotReadScriptException;
+import org.springframework.jdbc.datasource.init.ScriptParseException;
+import org.springframework.jdbc.datasource.init.ScriptStatementFailedException;
+import org.springframework.jdbc.datasource.init.UncategorizedScriptException;
 
 /**
  *
@@ -19,6 +27,7 @@ import org.springframework.dao.DataAccessException;
 public class Response {
     protected String message;
     protected int status_code;
+    protected String readable;
     public static final int GENERAL_SUCC = 200;
     public static final int ERROR_ACCOUNT_PASSWORD = 300; //Errors occured when authoration of account failed, including login, changing password etc.
 
@@ -43,9 +52,9 @@ public class Response {
     public static final int EXCEPTION_NULL = 609;  //there is field in reqeust is null, which is not acceptable.
     public static final int EXCEPTION_NULL_POINTER = 610;  //there is field in reqeust is null, which is not acceptable.  
     public static final int EXCEPTION_IO = 611;
-    public static final int WARNING_DANGER_ZONE = 700; //device's latest location has broke safety constraints/Device is in danger zone
-
-
+    public static final int ALERT_YELLOW = 700; //device's latest location has broke safety constraints/Device is in danger zone
+    public static final int ALERT_RED = 701;
+    public static final int ALERT_MISSING = 710;
     /**
      * default constructor to report success
      */
@@ -53,6 +62,7 @@ public class Response {
     {
         this.message = "SUCC";
         this.status_code = GENERAL_SUCC;
+        this.message = "";
     }
     
     public Response(String msg,int code)
@@ -64,13 +74,31 @@ public class Response {
             this.message = "Password validation failed. Transaction abort.";
     }
     
+    public Response (Exception e,ExceptionExplainer ee)
+    {
+        init(e,ee);
+    }
+    
+    
     public Response(Exception e)
     {
-        this.message = e.getMessage();
+        init(e,new ExceptionExplainerBuilder().build() );
+    }
+    
+    private void init(Exception e,ExceptionExplainer ee)
+    {
+                this.message = e.getMessage();
         if (e instanceof DataAccessException)
+        {
             this.status_code = EXCEPTION_DATA_ACCESS;
+            this.readable = ee.explain((DataAccessException)e);
+        }
+
         else if (e instanceof JWTVerificationException)
+        {
             this.status_code = EXCEPTION_RUNTIME_JWTVerificationException;
+            this.readable = ee.explain((JWTVerificationException)e);
+        }
         else if (e instanceof IllegalArgumentException)
             this.status_code = EXCEPTION_ILLEGAL_AGRUEMENT;
         else if (e.getClass() == IOException.class)
@@ -87,6 +115,10 @@ public class Response {
             this.status_code = EXCEPTION_NULL;
         else if (e.getClass() == NullPointerException.class)
             this.status_code = EXCEPTION_NULL_POINTER;
+        else if (e.getClass() == YellowAlert.class)
+            this.status_code = ALERT_YELLOW;
+        else if (e.getClass() == RedAlert.class)
+            this.status_code = ALERT_RED;
         else if (e.getClass()==RuntimeException.class)
             this.status_code = EXCEPTION_RUNTIME;
         else this.status_code = EXCEPTION_OTHER;
@@ -98,7 +130,7 @@ public class Response {
         this.status_code = code;
     }
     
-    
+
 
  
     /**

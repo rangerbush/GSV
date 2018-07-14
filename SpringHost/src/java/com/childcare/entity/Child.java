@@ -34,7 +34,8 @@ import javax.xml.bind.annotation.XmlRootElement;
     , @NamedQuery(name = "Child.findByCid", query = "SELECT c FROM Child c WHERE c.cid = :cid")
     , @NamedQuery(name = "Child.findByName", query = "SELECT c FROM Child c WHERE c.name = :name")
     , @NamedQuery(name = "Child.findByImage", query = "SELECT c FROM Child c WHERE c.image = :image")
-    , @NamedQuery(name = "Child.findByAge", query = "SELECT c FROM Child c WHERE c.age = :age")})
+    , @NamedQuery(name = "Child.findByAge", query = "SELECT c FROM Child c WHERE c.age = :age")
+    , @NamedQuery(name = "Child.findByStatus", query = "SELECT c FROM Child c WHERE c.status = :status")})
 public class Child implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -57,9 +58,18 @@ public class Child implements Serializable {
     @NotNull
     @Column(name = "Age")
     private int age;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "status")
+    private int status;
+    @OneToOne(mappedBy = "cid")
+    private Device device;
     @JoinColumn(name = "DeviceID", referencedColumnName = "DeviceID")
     @OneToOne
     private Device deviceID;
+    @JoinColumn(name = "Creator", referencedColumnName = "UID")
+    @ManyToOne(optional = false)
+    private Account creator;
     @JoinColumn(name = "FID", referencedColumnName = "fid")
     @ManyToOne(optional = false)
     private Family fid;
@@ -71,11 +81,12 @@ public class Child implements Serializable {
         this.cid = cid;
     }
 
-    public Child(Integer cid, String name, String image, int age) {
+    public Child(Integer cid, String name, String image, int age, int status) {
         this.cid = cid;
         this.name = name;
         this.image = image;
         this.age = age;
+        this.status = status;
     }
 
     public Integer getCid() {
@@ -110,12 +121,36 @@ public class Child implements Serializable {
         this.age = age;
     }
 
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public Device getDevice() {
+        return device;
+    }
+
+    public void setDevice(Device device) {
+        this.device = device;
+    }
+
     public Device getDeviceID() {
         return deviceID;
     }
 
     public void setDeviceID(Device deviceID) {
         this.deviceID = deviceID;
+    }
+
+    public Account getCreator() {
+        return creator;
+    }
+
+    public void setCreator(Account creator) {
+        this.creator = creator;
     }
 
     public Family getFid() {

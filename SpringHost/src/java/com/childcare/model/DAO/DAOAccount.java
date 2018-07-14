@@ -6,7 +6,9 @@
 package com.childcare.model.DAO;
 
 import com.childcare.entity.Account;
+import com.childcare.entity.AccountFamily;
 import com.childcare.entity.PasswdChanger;
+import com.childcare.model.service.serviceChild;
 import com.mysql.jdbc.PreparedStatement;
 import com.mysql.jdbc.Statement;
 import java.io.Serializable;
@@ -14,6 +16,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Iterator;
+import java.util.List;
 import javax.annotation.Resource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,10 +33,13 @@ import org.springframework.jdbc.support.KeyHolder;
 public class DAOAccount {
      @Resource 
     private JdbcTemplate jdbcTemplate;
+     @Resource
+     private serviceChild service;
+     public final String defaultFileName = "default.png";
      
       /*---------------------------ACCOUNT------------------------------*/
 
-    
+
     /**
      * 
      */
@@ -56,6 +63,7 @@ public class DAOAccount {
             user.setPassword(arg0.getString("Password"));  
             user.setDiscard(arg0.getInt("discard")!=0);  
             user.setPhone(arg0.getString("Phone"));
+            user.setAvatar(service.BASE_URL+"avatar/"+arg0.getString("avatar"));
             return user;  
         }  
           
@@ -84,13 +92,15 @@ public class DAOAccount {
     /**
      * Create a new account with UserName, Password, Email and Phone info in an existing Account instance, 
      * UID will be ignored as Database will assign an auto generated UID for you, and 'discard' field will be set as 0(not discarded).
-     * @param iAccount account instance used as data source
+     * @param account account instance used as data source
+     * @return 
      */
     public long createAccount(Account account) throws DataAccessException {  
         // TODO Auto-generated method stub  
         //example ('Enterprise','123','mail','12345','0')
-        String sql = "insert into account (FirstName,LastName,Password,Email,Phone,discard,PIN)"  
-                    + "values ('"+account.getFirstName()+"','"+account.getLastName()+"','"+account.getPassword()+"','"+account.getEmail()+"','"+account.getPhone()+"',0,'"+account.getPin()+"');";
+        String sql = "insert into account (FirstName,LastName,Password,Email,Phone,discard,PIN,avatar)"  
+                    + "values ('"+account.getFirstName().replaceAll("\'", "\\\\'")+"','"+account.getLastName().replaceAll("\'", "\\\\'")+"','"+account.getPassword().replaceAll("\'", "\\\\'")+"','"+account.getEmail().replaceAll("\'", "\\\\'")+"','"+account.getPhone().replaceAll("\'", "\\\\'")+"',0,'"+account.getPin()+
+                "','"+this.defaultFileName+"');";
         try
         {
             return this.run(sql);
@@ -176,11 +186,11 @@ public class DAOAccount {
     {
         String sql = "UPDATE `GSV_DB`.`account`\n" +
                      " SET\n" +
-                     " `FirstName` = '"+account.getFirstName()+"',\n" +
+                     " `FirstName` = '"+account.getFirstName().replaceAll("\'", "\\\\'")+"',\n" +
                      " `Password` = '"+account.getPassword()+"',\n" +
-                     " `Email` = '"+account.getEmail()+"',\n" +
-                     " `Phone` = '"+account.getPhone()+"',\n" +
-                     " `LastName` = '"+account.getLastName()+"'\n" +
+                     " `Email` = '"+account.getEmail().replaceAll("\'", "\\\\'")+"',\n" +
+                     " `Phone` = '"+account.getPhone().replaceAll("\'", "\\\\'")+"',\n" +
+                     " `LastName` = '"+account.getLastName().replaceAll("\'", "\\\\'")+"'\n" +
                      " WHERE `UID` = "+account.getUid()+";"; 
         try{
             this.jdbcTemplate.execute(sql);
@@ -200,9 +210,9 @@ public class DAOAccount {
     {
         String sql = "UPDATE `GSV_DB`.`account`\n" +
                      " SET\n" +
-                     " `FirstName` = '"+account.getFirstName()+"',\n" +
-                     " `Email` = '"+account.getEmail()+"',\n" +
-                     " `Phone` = '"+account.getPhone()+"',\n" +
+                     " `FirstName` = '"+account.getFirstName().replaceAll("\'", "\\\\'")+"',\n" +
+                     " `Email` = '"+account.getEmail().replaceAll("\'", "\\\\'")+"',\n" +
+                     " `Phone` = '"+account.getPhone().replaceAll("\'", "\\\\'")+"',\n" +
                      " `LastName` = '"+account.getLastName()+"'\n" +
                      " WHERE `UID` = "+account.getUid()+";"; 
         try{
@@ -234,4 +244,15 @@ public class DAOAccount {
 
     }
     
+    public void updateAvatar(long uid, String avatar)
+    {
+        String sql = "update account set avatar = '"+avatar+"' where UID ="+uid+";";
+        this.jdbcTemplate.execute(sql);
+    }
+    
+    public List<Account> searchByFID(int fid)
+    {
+        String sql = "select * from account where UID in (select UID from Account_Family where FID ="+fid+");";
+        return this.jdbcTemplate.query(sql, new AccountMapper());
+    }
 }

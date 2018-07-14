@@ -12,14 +12,8 @@
        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
-    <bean class="org.springframework.web.servlet.mvc.support.ControllerClassNameHandlerMapping"/>
 
 
-    <!--
-    Most controllers will use the ControllerClassNameHandlerMapping above, but
-    for the index controller we are using ParameterizableViewController, so we must
-    define an explicit mapping for it.
-    -->
 <bean id="urlMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
         <property name="mappings">
             <props>
@@ -67,9 +61,8 @@
         <property name="marshaller" ref="jaxb2Marshaller"/>         
         <property name="supportedMediaTypes" value="application/xml" />
    </bean>
-   
-  
-
+   <mvc:resources mapping="/test_upload/**" location="file:D:/Upload/"/>
+   <mvc:resources mapping="/upload/**" location="file:/mnt/efs/upload/"/>
 
     
 </beans>

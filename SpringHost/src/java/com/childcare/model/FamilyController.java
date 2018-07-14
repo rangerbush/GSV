@@ -11,6 +11,7 @@ import com.childcare.entity.structure.Response;
 import com.childcare.entity.structure.ResponsePayload;
 import com.childcare.model.service.serviceFamily;
 import com.google.gson.Gson;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -90,25 +92,7 @@ public class FamilyController {
          }
 
     }
-    
-    /**
-     * Insert a new family record
-     * @param family
-     * @return 
-     */
-    @ResponseBody
-    @RequestMapping(value = "/register", method = POST,produces = { APPLICATION_JSON_VALUE })
-    public Object create(@RequestBody Family family)
-    {
-       // Gson gson = new Gson();
-       try{
-        return new ResponsePayload(Response.GENERAL_SUCC,"",jdbcDataDAO.getDaoFamily().createFamily(family));
-        }
-        catch (DataAccessException e)
-        {
-            return new Response(e);
-        }
-    } 
+
     
     @ResponseBody
     @RequestMapping(value = "/password", method = POST,produces = { APPLICATION_JSON_VALUE })
@@ -144,7 +128,20 @@ public class FamilyController {
             return new Response(e);
         }
     }
-        
-        
-        
+    
+    @ResponseBody
+    @RequestMapping(value = "/get_member", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object getMember(@RequestParam(value = "fid")int fid,@RequestParam(value = "token")String token,@RequestParam(value = "uid")long uid)
+    {
+        return this.service.getFamilyMembers(fid, token, uid);
+    }
+    
+        @ResponseBody
+    @RequestMapping(value = "/get_member_detail", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object getMemberDetailed(@RequestParam(value = "fid")int fid,@RequestParam(value = "token")String token,@RequestParam(value = "uid")long uid)
+    {
+        return this.service.getFamilyMembersDetailed(fid, token, uid);
+    }
+
+
 }

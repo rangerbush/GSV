@@ -5,15 +5,14 @@
  */
 package com.childcare.entity.structure;
 
-import com.childcare.entity.Anchor;
 
 /**
  *
  * @author New User
  */
-public class ResponsePayload extends Response {
+public class ResponsePayload <T> extends Response {
     
-    private Object payload;
+    private T payload;
     
     /**
      * 
@@ -21,21 +20,21 @@ public class ResponsePayload extends Response {
      * @param msg
      * @param payload 
      */
-    public ResponsePayload(int code,String msg,Object payload)
+    public ResponsePayload(int code,String msg,T payload)
     {
         super.message = msg;
         super.status_code = code;
         this.payload = payload;
     }
     
-    public ResponsePayload(Object payload)
+    public ResponsePayload(T payload)
     {
         super.message = "";
         super.status_code = 200;
         this.payload = payload;
     }
 
-    public ResponsePayload(Exception e,Object payload)
+    public ResponsePayload(Exception e,T payload)
     {
         super(e);
         this.payload = payload;
@@ -50,7 +49,7 @@ public class ResponsePayload extends Response {
     /**
      * @param payload the payload to set
      */
-    public void setPayload(Object payload) {
+    public void setPayload(T payload) {
         
         this.payload = payload;
     }

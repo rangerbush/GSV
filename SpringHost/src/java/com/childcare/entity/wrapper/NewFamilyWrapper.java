@@ -13,13 +13,14 @@ import com.childcare.entity.Family;
  */
 public class NewFamilyWrapper {
     private Family family;
-    private int uid;      
+    private long uid;      
     private String token;
+    private int status;
     public NewFamilyWrapper()
     {
         
     }
-    public NewFamilyWrapper(Family f,int uid,String token)
+    public NewFamilyWrapper(Family f,long uid,String token)
     {
         this.family = f;
         this.uid = uid;
@@ -43,14 +44,14 @@ public class NewFamilyWrapper {
     /**
      * @return the uid
      */
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 
     /**
      * @param uid the uid to set
      */
-    public void setUid(int uid) {
+    public void setUid(long uid) {
         this.uid = uid;
     }
 
@@ -67,4 +68,19 @@ public class NewFamilyWrapper {
     public void setToken(String token) {
         this.token = token;
     }
+
+    /**
+     * @return the status
+     */
+    public int getStatus() {
+        return status;
+    }
+
+    /**
+     * @param status the status to set
+     */
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
 }

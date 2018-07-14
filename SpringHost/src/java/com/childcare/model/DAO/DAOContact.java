@@ -49,6 +49,7 @@ public class DAOContact {
             contact.setFirstName(arg0.getString("firstName"));
             contact.setLastName(arg0.getString("lastName"));
             contact.setPhone(arg0.getString("phone"));
+            contact.setStatus(arg0.getInt("status"));
             return contact;  
         }  
     }
@@ -70,13 +71,13 @@ public class DAOContact {
     {
         contact = this.normalizer(contact);
         String sql = "INSERT INTO `GSV_DB`.`contact`\n " +
-                    "(`uid`,`firstName`,`lastName`,`email`,`phone`)\n " +
+                    "(`uid`,`firstName`,`lastName`,`email`,`phone`,`status`)\n " +
                     " VALUES\n " +
                     "( "+contact.getUid().getUid()+", '"
-                +contact.getFirstName()+"', '"
-                +contact.getLastName()+"', '"
-                +contact.getEmail()+"', '"
-                +contact.getPhone()+"');";
+                +contact.getFirstName().replaceAll("\'", "\\\\'")+"', '"
+                +contact.getLastName().replaceAll("\'", "\\\\'")+"', '"
+                +contact.getEmail().replaceAll("\'", "\\\\'")+"', '"
+                +contact.getPhone()+"',"+contact.getStatus()+");";
         KeyHolder keyHolder = new GeneratedKeyHolder();             
         int updatecount/*number of effected rows*/ = this.jdbcTemplate.update(new PreparedStatementCreator() {  
             @Override  
@@ -110,11 +111,12 @@ public class DAOContact {
         String sql = "UPDATE `GSV_DB`.`contact` " +
                     "SET " +
                    // "`fid` =  "+contact.getFid().getFid()+ ", " +
-                    "`firstName` =  '"+contact.getFirstName()+  "', " +
-                    "`lastName` =  '"+contact.getLastName()+  "', " +
-                    "`email` =  '"+contact.getEmail()+  "', " +
-                    "`phone` =  '"+contact.getPhone()+  "' " +
-                    "WHERE `contact_id` =  "+contact.getContactId()+ ";";
+                    "`firstName` =  '"+contact.getFirstName().replaceAll("\'", "\\\\'")+  "', " +
+                    "`lastName` =  '"+contact.getLastName().replaceAll("\'", "\\\\'")+  "', " +
+                    "`email` =  '"+contact.getEmail().replaceAll("\'", "\\\\'")+  "', " +
+                    "`phone` =  '"+contact.getPhone().replaceAll("\'", "\\\\'")+  "', " +
+                    "`status` ="+contact.getStatus()+
+                    " WHERE `contact_id` =  "+contact.getContactId()+ ";";
         this.jdbcTemplate.execute(sql);
     }
     

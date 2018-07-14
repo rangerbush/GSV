@@ -5,6 +5,7 @@
  */
 package com.childcare.model;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.childcare.entity.Child;
 import com.childcare.entity.Device;
 import com.childcare.entity.Family;
@@ -14,10 +15,13 @@ import com.childcare.entity.wrapper.ChildFIDWrapper;
 import com.childcare.entity.wrapper.ChildWrapper;
 import com.childcare.model.service.serviceChild;
 import com.childcare.model.support.HashUtil;
+import com.childcare.model.support.JsonWebTokenUtil;
 import javax.servlet.ServletContext;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.security.cert.CertificateException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
@@ -91,6 +95,8 @@ public Response execute(@RequestParam int cid,@RequestParam String token,@Reques
         return this.service.readChild(wrapper.getUid(), wrapper.getToken(), wrapper.getFid());
     }
     
+
+    
     @ResponseBody
     @RequestMapping(value = "/get_all_children", method = POST, produces = { APPLICATION_JSON_VALUE})
     public Object getAllChildren(@RequestBody ChildWrapper wrapper)
@@ -114,20 +120,7 @@ public Response execute(@RequestParam int cid,@RequestParam String token,@Reques
         return new ChildDeleteWrapper();
     }
     
-    @ResponseBody
-    @RequestMapping(value = "/help_create", method = GET, produces = { APPLICATION_JSON_VALUE})
-    public Object helpChild()
-    {
-       ChildWrapper w = new ChildWrapper(null,23,"token");
-       Child child = new Child(3);
-       child.setFid(new Family(11111115));
-       child.setDeviceID(new Device("did"));
-       child.setName("name");
-       child.setImage("ImageURL");
-       child.setAge(6);
-       w.setChild(child);
-       return w;
-    }
+
     
     
     

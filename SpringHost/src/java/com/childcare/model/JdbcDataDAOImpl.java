@@ -43,8 +43,10 @@ import com.childcare.model.DAO.DAOAnchorGroup;
 import com.childcare.model.DAO.DAOChild;
 import com.childcare.model.DAO.DAOContact;
 import com.childcare.model.DAO.DAODevice;
+import com.childcare.model.DAO.DAODeviceToken;
 import com.childcare.model.DAO.DAOFamily;
 import com.childcare.model.DAO.DAORefreshToken;
+import com.childcare.model.DAO.DAOSupervisor;
 import com.childcare.model.support.PasswordUtility;
 import com.mysql.jdbc.PreparedStatement;
 import com.mysql.jdbc.Statement;
@@ -102,6 +104,10 @@ public class JdbcDataDAOImpl{
     private DAOChild daoChild;
     @Resource(name="daoContact")
     private DAOContact daoContact;
+    @Resource(name="daoSupervisor")
+    private DAOSupervisor daoSupervisor;
+    @Resource(name="daoDeviceToken")
+    private DAODeviceToken daoDeviceToken;
     @Resource(name="transactionManager")
     private org.springframework.jdbc.datasource.DataSourceTransactionManager tm;
     
@@ -197,19 +203,9 @@ public class JdbcDataDAOImpl{
         return daoActionSet;
     }
 
-    /**
-     * @param daoDevice the daoDevice to set
-     */
-    public void setDaoDevice(DAODevice daoDevice) {
-        this.daoDevice = daoDevice;
-    }
 
-    /**
-     * @param utility the utility to set
-     */
-    public void setUtility(PasswordUtility utility) {
-        this.utility = utility;
-    }
+
+
 
     /**
      * @return the daoActionTaken
@@ -245,5 +241,21 @@ public class JdbcDataDAOImpl{
     public DAOContact getDaoContact() {
         return daoContact;
     }
-    
+
+    /**
+     * @return the daoDeviceToken
+     */
+    public DAODeviceToken getDaoDeviceToken() {
+        return daoDeviceToken;
+    }
+
+
+    /**
+     * @return the daoSupervisor
+     */
+    public DAOSupervisor getDaoSupervisor() {
+        return daoSupervisor;
+    }
+
+
 }  

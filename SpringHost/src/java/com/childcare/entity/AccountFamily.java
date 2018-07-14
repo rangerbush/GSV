@@ -6,6 +6,7 @@
 package com.childcare.entity;
 
 import java.io.Serializable;
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
@@ -14,6 +15,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
@@ -30,11 +32,18 @@ import javax.xml.bind.annotation.XmlRootElement;
     , @NamedQuery(name = "AccountFamily.findByStatus", query = "SELECT a FROM AccountFamily a WHERE a.status = :status")})
 public class AccountFamily implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "status")
+    private int status;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "isOwner")
+    private int isOwner;
+
     private static final long serialVersionUID = 1L;
     @EmbeddedId
     protected AccountFamilyPK accountFamilyPK;
-    @Column(name = "status")
-    private Integer status;
     @JoinColumn(name = "FID", referencedColumnName = "fid", insertable = false, updatable = false)
     @ManyToOne(optional = false)
     private Family family;
@@ -61,13 +70,6 @@ public class AccountFamily implements Serializable {
         this.accountFamilyPK = accountFamilyPK;
     }
 
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
-    }
 
     public Family getFamily() {
         return family;
@@ -108,6 +110,22 @@ public class AccountFamily implements Serializable {
     @Override
     public String toString() {
         return "com.childcare.entity.AccountFamily[ accountFamilyPK=" + accountFamilyPK + " ]";
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public int getIsOwner() {
+        return isOwner;
+    }
+
+    public void setIsOwner(int isOwner) {
+        this.isOwner = isOwner;
     }
     
 }

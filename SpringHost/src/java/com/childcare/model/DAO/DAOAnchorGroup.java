@@ -6,6 +6,7 @@
 package com.childcare.model.DAO;
 
 import com.childcare.entity.Anchorgroup;
+import com.childcare.entity.Child;
 import com.childcare.entity.Family;
 import com.mysql.jdbc.PreparedStatement;
 import com.mysql.jdbc.Statement;
@@ -15,6 +16,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Resource;
 import org.springframework.dao.DataAccessException;
@@ -34,18 +36,6 @@ public class DAOAnchorGroup {
     
     private Anchorgroup normalizer(Anchorgroup group)
     {
-        if (group.getInLat()==null)
-            group.setInLat(BigDecimal.ZERO);
-        if (group.getInLong()==null)
-            group.setInLong(BigDecimal.ZERO);
-        if (group.getInRadius()==null)
-            group.setInRadius(BigDecimal.ZERO);
-        if (group.getExLat()==null)
-            group.setExLat(BigDecimal.ZERO);
-        if (group.getExLong()==null)
-            group.setExLong(BigDecimal.ZERO);
-        if (group.getExRadius()==null)
-            group.setExRadius(BigDecimal.ZERO);
         return group;
     }
     
@@ -63,20 +53,13 @@ public class DAOAnchorGroup {
         public Object mapRow(ResultSet arg0, int arg1) throws SQLException {  
             // TODO Auto-generated method stub  
             Anchorgroup group = new Anchorgroup();  
-            group.setGid(arg0.getLong("GID"));  
+            group.setGid(arg0.getInt("GID"));  
             group.setGroupName(arg0.getString("GroupName"));
-            Family f = new Family();
-            f.setFid(arg0.getInt("FID"));
-            group.setFid(f);  
-            group.setInLat(arg0.getBigDecimal("inLat"));  
-            group.setInLong(arg0.getBigDecimal("inLong")); 
-            group.setInRadius(arg0.getBigDecimal("inRadius"));
-            group.setExLat(arg0.getBigDecimal("exLat"));  
-            group.setExLong(arg0.getBigDecimal("exLong")); 
-            group.setExRadius(arg0.getBigDecimal("exRadius"));
+            Child c = new Child();
+            c.setCid(arg0.getInt("CID"));
+            group.setCid(c);
             group.setType(arg0.getInt("Type"));
             group.setMaxSeq(arg0.getInt("MaxSeq"));
-            group.setCluster(arg0.getInt("Cluster"));
             return group;  
         }  
           
@@ -89,54 +72,33 @@ public class DAOAnchorGroup {
      */
     public void updateGroup(Anchorgroup group) throws DataAccessException
       {         
- 
+          group = this.normalizer(group);
         String sql = "UPDATE `GSV_DB`.`anchorgroup`\n" +
                      "SET\n" +
                     // "`GID` = "+group.getGid()+",\n" +
-                     "`GroupName` = '"+group.getGroupName()+"',\n" +
+                     "`GroupName` = '"+group.getGroupName().replaceAll("\'", "\\\\'")+"',\n" +
            //          "`FID` = "+group.getFid().getFid()+",\n" +
-                     "`inLat` = "+group.getInLat()+",\n" +
-                     "`inLong` = "+group.getInLong()+",\n" +
-                     "`inRadius` = "+group.getInRadius()+",\n" +
-                     "`exLat` = "+group.getExLat()+",\n" +
-                     "`exLong` = "+group.getExLong()+",\n" +
-                     "`exRadius` = "+group.getExRadius()+",\n" +
-                     "`Type` = "+group.getType()+",\n" +
-                     "`Cluster` ="+group.getCluster()+"\n"+
+                     "`Type` = "+group.getType()+" \n" +
                      "WHERE `GID` = "+group.getGid()+";";
          this.jdbcTemplate.execute(sql);       
       }
     
-    public long createGroup(Anchorgroup group)
+    public int createGroup(Anchorgroup group)
     {
         group = this.normalizer(group);
         String sql = "INSERT INTO `GSV_DB`.`anchorgroup`\n" +
                     // "(`GID`,\n" +
                      "(`GroupName`,\n" +
-                     "`FID`,\n" +
-                     "`inLat`,\n" +
-                     "`inLong`,\n" +
-                     "`inRadius`,\n" +
-                     "`exLat`,\n" +
-                     "`exLong`,\n" +
-                     "`exRadius`,\n" +
+                     "`CID`,"+
                      "`MaxSeq`,\n"+
-                     "`Type`,\n" +
-                     "`Cluster`) \n"+
+                     "`Type`) \n"+
                      "VALUES \n" +
                 "("+
                  //    "(<{GID: }>,\n" +
-                     "'"+group.getGroupName()+"',\n " +
-                     group.getFid().getFid()+",\n " +
-                     group.getInLat()+",\n " +
-                     group.getInLong()+",\n " +
-                     group.getInRadius()+",\n " +
-                     group.getExLat()+",\n " +
-                     group.getExLong()+",\n " +
-                     group.getExRadius()+",\n " +
-                     group.getMaxSeq()+",\n " +
-                     group.getType()+",\n " +
-                     group.getCluster()+ ");";
+                     "'"+group.getGroupName().replaceAll("\'", "\\\\'")+"',\n " +
+                     group.getCid().getCid()+","+
+                     0+",\n " +
+                     group.getType()+ ");";
           System.out.println(sql);
          return this.run(sql);
 
@@ -148,7 +110,7 @@ public class DAOAnchorGroup {
      * @return 
      * @throws DataAccessException 
      */
-    public Anchorgroup getGroupInstance(Long GID) throws DataAccessException
+    public Anchorgroup getGroupInstance(int GID) throws DataAccessException
     {
         String sql = "select * from `GSV_DB`.`anchorgroup` where `GID` = ?;";  
         Object[] params = {GID};  
@@ -156,26 +118,40 @@ public class DAOAnchorGroup {
         return (Anchorgroup)jdbcTemplate.queryForObject(sql, params, types, new AnchorGroupMapper());     
     }
     
-    public List<Anchorgroup> searchGroupsByFIDandCluster(int FID,int cluster) throws DataAccessException
+    public List<Anchorgroup> getGroups(List<Integer> gidList)
     {
-        String sql = "SELECT * FROM `GSV_DB`.`anchorgroup` WHERE `FID` = " +FID+" and `Cluster` = "+cluster+";";
+        if (gidList.isEmpty())
+            throw new DataAccessException("Input GroupID list is empty."){};
+        StringBuilder sb = new StringBuilder();
+        Iterator<Integer> it = gidList.iterator();
+        while(it.hasNext())
+        {
+            sb.append(",").append(it.next());
+        }
+        sb.deleteCharAt(0);
+        String sql = "select * from `GSV_DB`.`anchorgroup` where `GID` IN ("+sb.toString()+");";
+        return this.jdbcTemplate.query(sql, new AnchorGroupMapper());
+    }
+    
+    /**
+     * 搜寻有相同FID及cluster的group列表
+     * @param cid
+     * @return
+     * @throws DataAccessException 
+     */
+    public List<Anchorgroup> searchGroupsByCID(int cid)
+    {
+        String sql = "SELECT * FROM `GSV_DB`.`anchorgroup` WHERE  `CID` = "+cid+";";
         return (List<Anchorgroup>)this.jdbcTemplate.query(sql, new AnchorGroupMapper());
     }
     
-    public List<Anchorgroup> searchGroupsByFID(int FID) throws DataAccessException
-    {
-        String sql = "SELECT * FROM `GSV_DB`.`anchorgroup` WHERE `FID` = " +FID+";";
-        return (List<Anchorgroup>)this.jdbcTemplate.query(sql, new AnchorGroupMapper());
-    }
-    
-
     
     /**
      * Delete statement
      * @param GID Group ID of the group to be deleted
      * @throws DataAccessException 
      */
-    public void deleteGroup(Long GID) throws DataAccessException  //TODO: 检查是否需要删除下属anchor表中记录
+    public void deleteGroup(int GID) throws DataAccessException  //TODO: 检查是否需要删除下属anchor表中记录
     {
         String sql = "DELETE FROM `GSV_DB`.`anchorgroup`\n" +
                      "WHERE `GID` = "+GID+";";
@@ -190,7 +166,7 @@ public class DAOAnchorGroup {
      * @return
      * @throws DataAccessException 
      */
-    private long run(String sql) throws DataAccessException
+    private int run(String sql) throws DataAccessException
     {
          KeyHolder keyHolder = new GeneratedKeyHolder();             
 
@@ -199,7 +175,7 @@ public class DAOAnchorGroup {
             public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {  
             PreparedStatement ps = (PreparedStatement) connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);  
             return ps;  }},keyHolder);
-            long id = keyHolder.getKey().longValue(); 
+            int id = keyHolder.getKey().intValue(); 
             return id;
             //http://fancyboy2050.iteye.com/blog/1455559
             //在JDBC 3.0规范中，当新增记录时，允许将数据库自动产生的主键值绑定到Statement或PreparedStatement中

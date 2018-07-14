@@ -5,6 +5,9 @@
  */
 package com.childcare.entity.support;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  *
  * @author New User
@@ -16,12 +19,16 @@ public class sim_Child {
     private int age;
     private String deviceID;
     private int fid;
+    private int status;
+    @Getter
+    @Setter
+    private long creator;
     
     public sim_Child()
     {
         
     }
-    public sim_Child(int cid,String name,String image,int age,String did,int fid)
+    public sim_Child(int cid,String name,String image,int age,String did,int fid,int status,long creator)
     {
         this.age=age;
         this.cid=cid;
@@ -29,6 +36,8 @@ public class sim_Child {
         this.deviceID=did;
         this.name=name;
         this.image=image;
+        this.status = status;
+        this.creator = creator;
     }
 
     /**
@@ -115,5 +124,19 @@ public class sim_Child {
      */
     public void setImage(String image) {
         this.image = image;
+    }
+
+    /**
+     * @return the status
+     */
+    public int getStatus() {
+        return status;
+    }
+
+    /**
+     * @param status the status to set
+     */
+    public void setStatus(int status) {
+        this.status = status;
     }
 }

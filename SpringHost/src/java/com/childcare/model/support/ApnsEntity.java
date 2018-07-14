@@ -7,6 +7,9 @@ package com.childcare.model.support;
 
 import com.notnoop.apns.APNS;
 import com.notnoop.apns.ApnsService;
+import com.notnoop.apns.EnhancedApnsNotification;
+import java.util.Date;
+import java.util.Map;
 
 /**
  *
@@ -15,30 +18,47 @@ import com.notnoop.apns.ApnsService;
 public class ApnsEntity implements Runnable{
     private String deviceID;
     private String rawBody;
+    private long timestamp;
+    
+    public ApnsEntity(String deviceID,String raw,long time)
+    {
+        this.deviceID = deviceID;
+        this.rawBody = raw;
+        this.timestamp = time;
+    }
     
     public ApnsEntity(String deviceID,String raw)
     {
         this.deviceID = deviceID;
         this.rawBody = raw;
+        this.timestamp = 0;
     }
     
     @Override
     public void run() {
-    System.out.println("Push: "+this.deviceID+" with payload -> "+this.rawBody);
     ApnsService service =
     APNS.newService()
-    .withCert("/path/to/certificate.p12", "MyCertPassword")
+    //.withCert("D:/Certificates.p12", "123456")
+    .withCert("/mnt/efs/glassfish5/Certificates.p12", "123456")
+           // "/WEB-INF/Certificates.p12"
     .withSandboxDestination()
     .asQueued()
-    .withNoErrorDetection()
+   // .withNoErrorDetection()
     .build();
+    service.start();
+   int now =  (int)(new Date().getTime()/1000);
     String payload = APNS.newPayload()
             .alertBody(this.getRawBody())
-            .alertTitle("Monitored watches have gone dark for too long!")
+            .alertTitle("Global Safety Village")
             .badge(1)
-            .customField("Missing",this.rawBody)
             .build();
-    service.push(this.deviceID, payload);
+    EnhancedApnsNotification e = new EnhancedApnsNotification(EnhancedApnsNotification.INCREMENT_ID(),now+3600,this.deviceID,payload);
+   // service.push(this.deviceID, payload);
+    service.push(e);
+   // Map map = service.getInactiveDevices();
+  //  System.out.println("Map: "+map.toString());
+  //  System.out.println(payload);
+    service.stop();
     }
 
     /**

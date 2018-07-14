@@ -13,6 +13,8 @@ import com.childcare.entity.Device;
  */
 public interface IpushManager {
     
-    public void push(Device device);
+    
+    public void push(Device device,String msg);
+    
     
 }

@@ -12,11 +12,13 @@ package com.childcare.entity;
 public class MailandPsw {
     private String email;
     private String password;
+    private String device;
     
-    public MailandPsw(String email,String psw)
+    public MailandPsw(String email,String psw,String device)
     {
         this.password = psw;
         this.email = email;
+        this.device = device;
     }
     
     public MailandPsw()
@@ -52,6 +54,20 @@ public class MailandPsw {
      */
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    /**
+     * @return the device
+     */
+    public String getDevice() {
+        return device;
+    }
+
+    /**
+     * @param device the device to set
+     */
+    public void setDevice(String device) {
+        this.device = device;
     }
     
     

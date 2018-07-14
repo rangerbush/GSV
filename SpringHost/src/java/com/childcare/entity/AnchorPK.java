@@ -21,7 +21,7 @@ public class AnchorPK implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "GID")
-    private long gid;
+    private int gid;
     @Basic(optional = false)
     @NotNull
     @Column(name = "SeqID")
@@ -30,16 +30,16 @@ public class AnchorPK implements Serializable {
     public AnchorPK() {
     }
 
-    public AnchorPK(long gid, int seqID) {
+    public AnchorPK(int gid, int seqID) {
         this.gid = gid;
         this.seqID = seqID;
     }
 
-    public long getGid() {
+    public int getGid() {
         return gid;
     }
 
-    public void setGid(long gid) {
+    public void setGid(int gid) {
         this.gid = gid;
     }
 
@@ -54,7 +54,7 @@ public class AnchorPK implements Serializable {
     @Override
     public int hashCode() {
         int hash = 0;
-        hash += (long) gid;
+        hash += (int) gid;
         hash += (int) seqID;
         return hash;
     }

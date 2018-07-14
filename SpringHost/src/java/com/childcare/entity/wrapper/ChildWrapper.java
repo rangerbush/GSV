@@ -13,14 +13,14 @@ import com.childcare.entity.Child;
  */
 public class ChildWrapper {
     private Child child;
-    private int uid;
+    private long uid;
     private String token;
     public ChildWrapper()
     {
 
     }
     
-    public ChildWrapper(Child child,int uid,String token)
+    public ChildWrapper(Child child,long uid,String token)
     {
         this.child = child;
         this.uid = uid;
@@ -44,14 +44,14 @@ public class ChildWrapper {
     /**
      * @return the uid
      */
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 
     /**
      * @param uid the uid to set
      */
-    public void setUid(int uid) {
+    public void setUid(long uid) {
         this.uid = uid;
     }
 

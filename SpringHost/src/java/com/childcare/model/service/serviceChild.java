@@ -8,12 +8,14 @@ package com.childcare.model.service;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.childcare.entity.AccountFamily;
 import com.childcare.entity.Child;
+import com.childcare.entity.Device;
 import com.childcare.entity.Family;
 import com.childcare.entity.structure.Response;
 import com.childcare.entity.structure.ResponsePayload;
 import com.childcare.entity.support.sim_Child;
+import static com.childcare.model.DAO.DAOChild.URL;
 import com.childcare.model.JdbcDataDAOImpl;
-import com.childcare.model.NullException;
+import com.childcare.model.exception.NullException;
 import com.childcare.model.support.JsonWebTokenUtil;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.servlet.ServletContext;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -50,10 +53,11 @@ public class serviceChild {
     private JdbcDataDAOImpl jdbcDataDAO;
     @Autowired
     ServletContext context;
-    private final String BASE_PATH = "/mnt/efs/upload"+  File.separator;
-    private final String BASE_PATH_TEST = "D:"+  File.separator;
+    public final String BASE_PATH = "/mnt/efs/upload"+  File.separator;
+    public final String BASE_PATH_TEST = "D:"+  File.separator;
+    public final String BASE_URL = "safetyvillage.top:8080/SpringHost/upload/";
     
-    public Object deleteChild(int uid,String token,int cid,String f_password)
+    public Response deleteChild(long uid,String token,int cid,String f_password)
     {
         try{
         if(!JsonWebTokenUtil.checkAccess(uid, token)) //验证身份
@@ -75,7 +79,7 @@ public class serviceChild {
         }
     }
     
-    public Response getImage(int cid,String token,int uid,HttpServletRequest request,HttpServletResponse response)
+    public Response getImage(int cid,String token,long uid,HttpServletRequest request,HttpServletResponse response)
     {
         try{
         if (!this.editImageAuth(uid, token, cid))
@@ -105,7 +109,7 @@ public class serviceChild {
     }
     
     @Transactional
-    public Response editImage(int cid, String token,int uid,MultipartFile inputFile) throws RuntimeException
+    public Response editImage(int cid, String token,long uid,MultipartFile inputFile) throws RuntimeException
     {
         //先检查文件是否为null或为空
         if (inputFile==null | inputFile.isEmpty())
@@ -121,9 +125,10 @@ public class serviceChild {
         }
         String originalFilename = inputFile.getOriginalFilename();
         String suffix = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
-        if (!(suffix.equalsIgnoreCase("png")|suffix.equalsIgnoreCase("gif")|suffix.equalsIgnoreCase("png")|suffix.equalsIgnoreCase("jpeg")))
+        if (!(suffix.equalsIgnoreCase("jpg")|suffix.equalsIgnoreCase("gif")|suffix.equalsIgnoreCase("png")|suffix.equalsIgnoreCase("jpeg")))
             return new Response(Response.ERROR_INVALID_FILE_TYPE,"Only JPG, PNG and GIF are accepted.");
         String finalName = /*context.getRealPath("/WEB-INF/uploaded")*/ this.BASE_PATH+ cid+ "."+ suffix;
+        String url = this.BASE_URL+ cid+ "."+ suffix;
         try {
            //鉴权通过，开始业务
            //先生成hash过的文件名
@@ -135,7 +140,7 @@ public class serviceChild {
             Logger.getLogger(serviceChild.class.getName()).log(Level.SEVERE, null, ex);
             return new Response(Response.EXCEPTION_IO,"IO exception happened. Failed to save uploaded file.");
         }
-        return new Response(Response.GENERAL_SUCC,"Image updated.");
+        return new ResponsePayload(Response.GENERAL_SUCC,"Image updated.",url);
     }
     
     
@@ -146,7 +151,7 @@ public class serviceChild {
      * @param cid
      * @return 
      */
-    public boolean editImageAuth(int uid,String token,int cid)
+    public boolean editImageAuth(long uid,String token,int cid)
     {
         try {
             if (JsonWebTokenUtil.checkAccess(uid, token))
@@ -167,7 +172,7 @@ public class serviceChild {
         }
     }
     
-    public Object createChild(int uid,String token,Child child)
+    public Response createChild(long uid,String token,Child child)
     {
         try{
         if(JsonWebTokenUtil.checkAccess(uid, token)) 
@@ -191,7 +196,7 @@ public class serviceChild {
             if(flag)
             {
                 //鉴权通过
-                int cid = this.jdbcDataDAO.getDaoChild().create(child);
+                int cid = this.jdbcDataDAO.getDaoChild().create(child,uid);
                 return new ResponsePayload(Response.GENERAL_SUCC,"Child created.",cid);
             }
             else //不是家庭成员，无权添加child
@@ -208,7 +213,7 @@ public class serviceChild {
     
     
     //用户需要为操作的child原纪录fid的成员
-    public Object editChild(int uid,String token,Child child)
+    public Response editChild(long uid,String token,Child child)
     {
         try{
         if(JsonWebTokenUtil.checkAccess(uid, token)) 
@@ -216,10 +221,10 @@ public class serviceChild {
             List<Family> list = this.jdbcDataDAO.getDaoFamily().findMyFamilies(uid);
             Child kidInRecord = this.jdbcDataDAO.getDaoChild().findByCID(child.getCid());
             boolean flag= false;  //已验证的用户是否有权对此家庭添加用户（member即可，无需家庭密码）
-            Iterator it = list.iterator();
+            Iterator<Family> it = list.iterator();
             while (it.hasNext())
             {
-                if (Objects.equals(((AccountFamily)it.next()).getFamily().getFid(), kidInRecord.getFid().getFid())) //UID对应family列表中有 根据child的cid 在数据库中查询到的fid数值
+                if (Objects.equals(it.next().getFid(), kidInRecord.getFid().getFid())) //UID对应family列表中有 根据child的cid 在数据库中查询到的fid数值
                 {
                     flag = true;break;
                 } 
@@ -242,14 +247,38 @@ public class serviceChild {
              }
     }
     
-    public Object readByUID(long uid,String token)
+    /**
+     * get all children of a given UID
+     * @param uid
+     * @param token
+     * @return 
+     */
+    public Response readByUID(long uid,String token)
     {
         try
         {
             if(!JsonWebTokenUtil.checkAccess(uid, token)) 
                 return new Response(Response.ERROR_TOKEN_ACCESS_UID,"AccessToken's authoration failed. UID in token does not match the request one or this is not an access token.");
-            List<Child> list = this.jdbcDataDAO.getDaoChild().findByUID(uid);
-            return new ResponsePayload(Response.GENERAL_SUCC,"Child list of UID "+uid+" fetched.",list);
+            List<Child> list = this.jdbcDataDAO.getDaoChild().findByUID(uid,URL);
+            List<Integer> fidList = list.stream().map(c->c.getFid().getFid()).collect(Collectors.toList());
+            List<String> didList = list.stream().map(c->{
+                if (c.getDeviceID()!=null)
+                return c.getDeviceID().getDeviceID();
+                else return null;
+                    })
+                    .filter(s->s!=null)
+                    .collect(Collectors.toList());
+            List<Device> dList = this.jdbcDataDAO.getDaoDevice().findMulti(didList);
+            List<Family> fList = this.jdbcDataDAO.getDaoFamily().getFamilyInstances(fidList);
+            List<Child> returnList = list.stream().filter(c->c.getDeviceID()!=null).map(c->
+            {
+               Device device = dList.stream().filter(d->d.getDeviceID().equals(c.getDeviceID().getDeviceID())).findAny().get();
+               Family family = fList.stream().filter(f->f.getFid().equals(c.getFid().getFid())).findAny().get();
+               c.setDeviceID(device);
+               c.setFid(family);
+               return c;
+            }).collect(Collectors.toList());      
+            return new ResponsePayload(Response.GENERAL_SUCC,"Child list of UID "+uid+" fetched.",returnList);
         }
         catch (DataAccessException | JWTVerificationException|UnsupportedEncodingException e )
         {
@@ -258,7 +287,7 @@ public class serviceChild {
     }
     
     //获得一个fid下所有child记录
-    public Object readChild(long uid,String token,int fid)
+    public Response readChild(long uid,String token,int fid)
     {
           try{
         if(JsonWebTokenUtil.checkAccess(uid, token)) 
@@ -276,11 +305,11 @@ public class serviceChild {
             if(flag)
             {
                 //鉴权通过
-                List<Child> cList = this.jdbcDataDAO.getDaoChild().findByFID(fid);
+                List<Child> cList = this.jdbcDataDAO.getDaoChild().findByFID(fid,URL);
                 List<sim_Child> returnList = new ArrayList<>();
                 cList.forEach((c) -> {
                     //(int cid,String fn,String ln,int age,String did,int fid)
-                    returnList.add(new sim_Child(c.getCid(),c.getName(),c.getImage(),c.getAge(),c.getDeviceID().getDeviceID(),c.getFid().getFid()));
+                    returnList.add(new sim_Child(c.getCid(),c.getName(),c.getImage(),c.getAge(),c.getDeviceID().getDeviceID(),c.getFid().getFid(),c.getStatus(),c.getCreator().getUid()));
                 });
                 return new ResponsePayload(Response.GENERAL_SUCC,"Children in family "+fid+" fetched.",returnList);
             }

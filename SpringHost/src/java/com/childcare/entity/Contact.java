@@ -37,6 +37,11 @@ import javax.xml.bind.annotation.XmlRootElement;
     , @NamedQuery(name = "Contact.findByPhone", query = "SELECT c FROM Contact c WHERE c.phone = :phone")})
 public class Contact implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "status")
+    private int status;
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -155,6 +160,14 @@ public class Contact implements Serializable {
     @Override
     public String toString() {
         return "com.childcare.entity.Contact[ contactId=" + contactId + " ]";
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
     }
     
 }

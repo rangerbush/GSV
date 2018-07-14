@@ -15,8 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
@@ -40,19 +39,8 @@ import javax.xml.bind.annotation.XmlTransient;
     , @NamedQuery(name = "Family.findByFamilyPassword", query = "SELECT f FROM Family f WHERE f.familyPassword = :familyPassword")})
 public class Family implements Serializable {
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "fid")
-    private Collection<Contact> contactCollection;
-
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "fid")
-    private Collection<Child> childCollection;
-
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "family")
     private Collection<AccountFamily> accountFamilyCollection;
-
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "MaxCluster")
-    private int maxCluster;
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -65,18 +53,16 @@ public class Family implements Serializable {
     private String familyName;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 30)
+    @Size(min = 1, max = 60)
     @Column(name = "FamilyPassword")
     private String familyPassword;
-    @JoinTable(name = "Account_Family", joinColumns = {
-        @JoinColumn(name = "FID", referencedColumnName = "fid")}, inverseJoinColumns = {
-        @JoinColumn(name = "UID", referencedColumnName = "UID")})
-    @ManyToMany
-    private Collection<Account> accountCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "fid")
     private Collection<Device> deviceCollection;
+    @JoinColumn(name = "Creator", referencedColumnName = "UID")
+    @ManyToOne(optional = false)
+    private Account creator;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "fid")
-    private Collection<Anchorgroup> anchorgroupCollection;
+    private Collection<Child> childCollection;
 
     public Family() {
     }
@@ -115,15 +101,6 @@ public class Family implements Serializable {
     }
 
     @XmlTransient
-    public Collection<Account> getAccountCollection() {
-        return accountCollection;
-    }
-
-    public void setAccountCollection(Collection<Account> accountCollection) {
-        this.accountCollection = accountCollection;
-    }
-
-    @XmlTransient
     public Collection<Device> getDeviceCollection() {
         return deviceCollection;
     }
@@ -132,13 +109,21 @@ public class Family implements Serializable {
         this.deviceCollection = deviceCollection;
     }
 
-    @XmlTransient
-    public Collection<Anchorgroup> getAnchorgroupCollection() {
-        return anchorgroupCollection;
+    public Account getCreator() {
+        return creator;
     }
 
-    public void setAnchorgroupCollection(Collection<Anchorgroup> anchorgroupCollection) {
-        this.anchorgroupCollection = anchorgroupCollection;
+    public void setCreator(Account creator) {
+        this.creator = creator;
+    }
+
+    @XmlTransient
+    public Collection<Child> getChildCollection() {
+        return childCollection;
+    }
+
+    public void setChildCollection(Collection<Child> childCollection) {
+        this.childCollection = childCollection;
     }
 
     @Override
@@ -166,14 +151,6 @@ public class Family implements Serializable {
         return "com.childcare.entity.Family[ fid=" + fid + " ]";
     }
 
-    public int getMaxCluster() {
-        return maxCluster;
-    }
-
-    public void setMaxCluster(int maxCluster) {
-        this.maxCluster = maxCluster;
-    }
-
     @XmlTransient
     public Collection<AccountFamily> getAccountFamilyCollection() {
         return accountFamilyCollection;
@@ -181,24 +158,6 @@ public class Family implements Serializable {
 
     public void setAccountFamilyCollection(Collection<AccountFamily> accountFamilyCollection) {
         this.accountFamilyCollection = accountFamilyCollection;
-    }
-
-    @XmlTransient
-    public Collection<Child> getChildCollection() {
-        return childCollection;
-    }
-
-    public void setChildCollection(Collection<Child> childCollection) {
-        this.childCollection = childCollection;
-    }
-
-    @XmlTransient
-    public Collection<Contact> getContactCollection() {
-        return contactCollection;
-    }
-
-    public void setContactCollection(Collection<Contact> contactCollection) {
-        this.contactCollection = contactCollection;
     }
     
 }

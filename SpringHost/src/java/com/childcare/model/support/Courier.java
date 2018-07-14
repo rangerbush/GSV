@@ -5,20 +5,17 @@
  */
 package com.childcare.model.support;
 
-import com.sun.mail.smtp.SMTPTransport;
-import com.sun.mail.util.BASE64EncoderStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
 import java.util.Properties;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.net.ssl.SSLSocket;
 
 /**
  * This class is responsible for sending mail to certain mail address
@@ -98,7 +95,6 @@ public class Courier {
         
     public  static void resetPassword(String text,String receiver) throws  MessagingException, UnsupportedEncodingException
     {
-    
                 Properties props = new Properties();
 		props.put("mail.smtp.host", "smtp.126.com");
                 props.put("mail.smtp.starttls.enable", "true");
@@ -122,29 +118,36 @@ public class Courier {
 			message.setText(text);
 			Transport.send(message);
 
-        /*
-        
-            Properties props = System.getProperties();
-            props.put("mail.transport.protocol", "smtp");
-            props.put("mail.smtp.port", "587");
-            props.put("mail.smtp.starttls.enable", "true");
-
-            Session session = Session.getDefaultInstance(props);
-            session.setDebug(true);
-
-            MimeMessage msg = new MimeMessage(session);
-            msg.setFrom(new InternetAddress("zaixiawuming@gmail.com", "gsv_password_reset"));
-            msg.setRecipient(Message.RecipientType.TO, new InternetAddress(receiver));
-            msg.setSubject("Reseting your GSV password");
-            msg.setContent(text, "text/html");
-
-            SMTPTransport transport = new SMTPTransport(session, null);
-            transport.connect("smtp.gmail.com", "zaixiawuming@gmail.com", null);
-            transport.issueCommand("AUTH XOAUTH2 " + new String(BASE64EncoderStream.encode(String.format("user=%s\1auth=Bearer %s\1\1", "zaixiawuming@gmail.com", smtpUserAccessToken).getBytes())), 235);
-            transport.sendMessage(msg, msg.getAllRecipients());
-*/
+     
     }
         
-        
+    public static void resetPasswordViaAliYun(String text,String receiver) throws AddressException, MessagingException
+    {
+                Properties props = new Properties();
+		props.put("mail.smtp.host", "smtp.safetyvillage.top");
+                props.put("mail.transport.protocol", "smtp"); 
+                //props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.socketFactory.port", "465");
+		props.put("mail.smtp.socketFactory.class","javax.net.ssl.SSLSocketFactory");
+                props.put("mail.smtp.socketFactory.fallback", "false");
+		props.put("mail.smtp.auth", "true");
+                props.put("mail.smtp.port", "25"); 
+		//props.put("mail.smtp.port", "587");
+		Session session = Session.getInstance(props);
+                session.setDebug(true);      
+		Message message = new MimeMessage(session);
+		message.setFrom(new InternetAddress("reset_password@safetyvillage.top"));
+		message.setRecipients(Message.RecipientType.TO,
+					InternetAddress.parse(receiver));
+		message.setSubject("GSV: Reset your password" );
+		message.setText(text);
+                message.saveChanges(); 
+                Transport transport = session.getTransport("smtp");  
+                transport.connect("smtp.safetyvillage.top", "reset_password@safetyvillage.top", "Nazgul784508");  
+                transport.sendMessage(message, message.getAllRecipients());  
+                transport.close();  
+
+
+    }
 
 }

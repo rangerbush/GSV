@@ -16,6 +16,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.childcare.entity.Account;
 import java.io.UnsupportedEncodingException;
+import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -78,6 +79,22 @@ public class JsonWebTokenUtil {
                  ((Claim)map.get("UID")).asLong() == uid  )
                return true;
            else return false;
+    }
+    
+        /**
+     * 
+     * @param uid
+     * @param access
+     * @return false if type is not correct, or uid does not match input
+     * @throws JWTVerificationException if token is not valid
+     * @throws UnsupportedEncodingException 
+     */
+    public static Long decodeAccess(String access) throws JWTVerificationException,UnsupportedEncodingException,CertificateException
+    {
+        Map<String,Claim> map = verify(access);
+           if (((Claim)map.get("Type")).asString().equals("Access"))
+               return  ((Claim)map.get("UID")).asLong() ;
+           else throw new CertificateException("This is not an access token."){};
     }
     
     /**

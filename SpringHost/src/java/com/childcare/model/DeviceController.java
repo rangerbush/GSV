@@ -11,13 +11,17 @@ import com.childcare.entity.DeviceAudit;
 import com.childcare.entity.Family;
 import com.childcare.entity.structure.Response;
 import com.childcare.entity.wrapper.NewDeviceWrapper;
+import com.childcare.entity.wrapper.Wrapper;
 import com.childcare.model.service.serviceDevice;
+import com.childcare.model.support.CoordinateConversion;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
@@ -31,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,12 +46,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = "/device")
 public class DeviceController {
-    
      @Resource
      private serviceDevice service;
-    
-
-    
     /**
      * Register a new device
      * @param device
@@ -94,44 +95,40 @@ public class DeviceController {
      }
     
     @ResponseBody
-    @RequestMapping(value = "/touch/help", method = GET,produces = { APPLICATION_JSON_VALUE })
-    public Object touchHelp() {
-            Device device = new Device("deviceId");
-            device.setLongitude(BigDecimal.ONE);
-            device.setLatitude(BigDecimal.ONE);
-            Family family = new Family(11111115);
-            family.setFamilyPassword("passwd");
-            device.setFid(family);
-            device.setPulse(60);
-            return device;
-            
+    @RequestMapping(value = "/device_of_family", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object deviceOfFamily(@RequestBody Wrapper<Integer> wrapper) {
+           return this.service.findByFID(wrapper);
+     }
+
+    
+
+    
+    @ResponseBody
+    @RequestMapping(value = "/test_run", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object testRunnable(@RequestParam("token") String token,@RequestParam("raw") String raw) {
+          return this.service.testRunnable(token,raw);
+     }
+    
+        @ResponseBody
+    @RequestMapping(value = "/test_lonlat2utm", method = POST,produces = { APPLICATION_JSON_VALUE })
+    public Object testUtm(@RequestParam("lon") double lon,@RequestParam("lat") double lat) {
+            CoordinateConversion cc = new CoordinateConversion();
+            String utm = cc.latLon2UTM(lat,lon);
+            Map<String,String> map = new HashMap();
+            map.put("UTM", utm);
+            double[] grid = cc.utm2LatLon(utm);
+            map.put("Lat", grid[0]+"");
+            map.put("Long", grid[1]+"");
+            return map;
      }
     
     @ResponseBody
-    @RequestMapping(value = "/edit/help", method = GET,produces = { APPLICATION_JSON_VALUE })
-    public Object editHelp() {
-            NewDeviceWrapper wrapper = new NewDeviceWrapper();
-            wrapper.setAccess("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVSUQiOjIzLCJUeXBlIjoiQWNjZXNzIiwiZXhwIjoxNTIzOTUwNDQ1LCJUVEwiOjI0LCJpYXQiOjE1MjM4NjQwNDV9.gyIClvzLhgeoA3wzPncUe-jJgUf2UR2Ur4beiTs0xwQ");
-            Device device = new Device("deviceId");
-            device.setLongitude(BigDecimal.ONE);
-            device.setLatitude(BigDecimal.ONE);
-            Family family = new Family(11111115);
-            family.setFamilyPassword("passwd");
-            device.setFid(family);
-            device.setPulse(60);
-            wrapper.setDevice(device);
-            wrapper.setUid(23);
-            return wrapper;
-            
+    @RequestMapping(value = "/test_constraint", method = GET,produces = { APPLICATION_JSON_VALUE })
+    public Object testConstraint() {
+        //Device device = this.jdbcDataDAO.getDaoDevice().getDeviceInstance("demo");
+          return this.service.testConstraint("demo");
      }
-    
-    
-    
-    @ResponseBody
-    @RequestMapping(value = "/fetch/{id}/{family}/{passwd}", method = GET,produces = { APPLICATION_JSON_VALUE })
-    public Object fetch(@PathVariable(value = "id")String id,@PathVariable(value = "family")int fid,@PathVariable(value = "passwd")String passwd) {
-        return this.service.fetch(id, fid, passwd);
-    }
+
     
     
     @ResponseBody
@@ -169,6 +166,7 @@ public class DeviceController {
     }
     
 
+    
 
     /**
      * @param service the service to set

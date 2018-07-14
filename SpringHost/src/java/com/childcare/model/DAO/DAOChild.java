@@ -15,8 +15,10 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Resource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
@@ -30,6 +32,8 @@ import org.springframework.jdbc.support.KeyHolder;
 public class DAOChild {
       @Resource 
     private JdbcTemplate jdbcTemplate;
+    public static final int DEFAULT = 0;
+    public static final int URL = 1;
       
          protected class ChildMapper implements RowMapper,Serializable{  
             /**
@@ -40,7 +44,7 @@ public class DAOChild {
              * @throws SQLException 
              */
         @Override  
-        public Object mapRow(ResultSet arg0, int arg1) throws SQLException {  
+        public Child mapRow(ResultSet arg0, int arg1) throws SQLException {  
             // TODO Auto-generated method stub  
             Child child = new Child();
             child.setAge(arg0.getInt("Age"));  
@@ -49,6 +53,32 @@ public class DAOChild {
             child.setImage(arg0.getString("Image"));
             child.setDeviceID(new Device(arg0.getString("DeviceID")));
             child.setFid(new Family(arg0.getInt("FID")));
+            child.setStatus(arg0.getInt("status"));
+            child.setCreator(new Account(arg0.getLong("Creator")));
+            return child;  
+        }  
+    }
+         
+          protected class WithURLMapper implements RowMapper,Serializable{  
+            /**
+             * 
+             * @param arg0 the ResultSet to map (pre-initialized for the current row)
+             * @param arg1 the number of the current row
+             * @return
+             * @throws SQLException 
+             */
+        @Override  
+        public Child mapRow(ResultSet arg0, int arg1) throws SQLException {  
+            // TODO Auto-generated method stub  
+            Child child = new Child();
+            child.setAge(arg0.getInt("Age"));  
+            child.setCid(arg0.getInt("CID"));
+            child.setName(arg0.getString("Name"));
+            child.setImage("safetyvillage.top:8080/SpringHost/upload/"+arg0.getString("Image"));
+            child.setDeviceID(new Device(arg0.getString("DeviceID")));
+            child.setFid(new Family(arg0.getInt("FID")));
+            child.setStatus(arg0.getInt("status"));
+            child.setCreator(new Account(arg0.getLong("Creator")));
             return child;  
         }  
     }
@@ -65,9 +95,10 @@ public class DAOChild {
     /**
      * create a new child record
      * @param child
+     * @param creator
      * @return CID of created record
      */
-    public int create(Child child)
+    public int create(Child child,long creator)
     {
         String did = "null";
         if (child.getDeviceID()!=null)
@@ -78,13 +109,17 @@ public class DAOChild {
                      "`DeviceID`,\n" +
                      "`Name`,\n" +
                      "`Image`,\n" +
+                     "`Creator`,\n"+
+                     "`status`,\n"+
                      "`Age`) \n" +
                      "VALUES \n" +
                      "("+
                      child.getFid().getFid()+",\n" +
                      did+",\n" +
-                     "'"+child.getName()+"',\n" +
+                     "'"+child.getName().replaceAll("\'", "\\\\'")+"',\n" +
                      "'"+child.getImage()+"',\n" +
+                     creator+","+
+                     child.getStatus()+","+
                      child.getAge()+");";
           KeyHolder keyHolder = new GeneratedKeyHolder();             
             int updatecount/*number of effected rows*/ = this.jdbcTemplate.update(new PreparedStatementCreator() {  
@@ -107,40 +142,118 @@ public class DAOChild {
         String sql = "UPDATE `GSV_DB`.`Child`\n" +
                      " SET\n" +
                      " `FID` = "+child.getFid().getFid()+",\n" +
-                     " `DeviceID` = "+did+",\n" +
-                     " `Name` = '"+child.getName()+"',\n" +
-                     " `Age` = "+child.getAge()+"\n" +
+                     " `DeviceID` = "+did.replaceAll("\'", "\\\\'")+",\n" +
+                     " `Name` = '"+child.getName().replaceAll("\'", "\\\\'")+"',\n" +
+                     " `Age` = "+child.getAge()+",\n" +
+                     "`status` = "+child.getStatus()+
                      " WHERE `CID` = "+child.getCid()+";";
         this.jdbcTemplate.execute(sql);
     }
     
     public Child findByCID(int cid)
     {
-        String sql = "select * FROM `GSV_DB`.`Child` WHERE `CID` = "+cid+";";
-        return (Child)this.jdbcTemplate.queryForObject(sql,new ChildMapper());
+        return this.findByCID(cid, DEFAULT);
     }
+    
+    public Child findByCID(int cid, int mode)
+    {
+        String sql = "select * FROM `GSV_DB`.`Child` WHERE `CID` = "+cid+";";
+        switch(mode)
+        {
+            case URL:
+            return (Child)this.jdbcTemplate.queryForObject(sql,new WithURLMapper());
+            default:
+            return (Child)this.jdbcTemplate.queryForObject(sql,new ChildMapper());    
+        }
+    }
+
     
     public Child findByDevice(String deviceID)
     {  
-        String sql = "select * FROM `GSV_DB`.`Child` WHERE `DeviceID` = '"+deviceID+"';";
-        List<Child> list = this.jdbcTemplate.query(sql,new ChildMapper());
+        return this.findByDevice(deviceID, DEFAULT);
+    }
+    
+    public Child findByDevice(String deviceID,int mode)
+    {  
+        String sql = "select * FROM `GSV_DB`.`Child` WHERE `DeviceID` = '"+deviceID.replaceAll("\'", "\\\\'")+"';";
+        List<Child> list;
+        switch(mode)
+        {
+            case URL:
+        list = this.jdbcTemplate.query(sql,new WithURLMapper());
+        break;
+            default:
+        list = this.jdbcTemplate.query(sql,new ChildMapper());
+        }
         if (list.isEmpty())
             return null;
         else return list.get(0);
     }
     
-    public List<Child> findByFID(int fid)
+    public List<Child> findByFID(int fid,int mode)
     {
         String sql = "SELECT * FROM `GSV_DB`.`Child` WHERE `Child`.`FID` = "+fid+"  ;";
-        List<Child> list = this.jdbcTemplate.query(sql,new ChildMapper());
+        List<Child> list;
+        switch(mode)
+        {
+            case URL:
+        list = this.jdbcTemplate.query(sql,new WithURLMapper());
+        break;
+            default:
+        list = this.jdbcTemplate.query(sql,new ChildMapper());
+        }
+        return list;
+    }
+    
+    public List<Child> findByFID(int fid)
+    {
+        return this.findByFID(fid, DEFAULT);
+    }
+    
+    /**
+     * 根据一系列fid查找所有下属的Child
+     * @param fidList
+     * @return 
+     */
+    public List<Child> findByMultiFID(List<Integer> fidList)
+    {
+        if (fidList.isEmpty())
+            throw new DataAccessException("Input list of families is empty."){};
+        StringBuilder sb = new StringBuilder();
+        Iterator<Integer> it = fidList.iterator();
+        while (it.hasNext())
+        {
+            sb.append(",").append(it.next());
+        }
+        sb.deleteCharAt(0);
+        String sql = "select * from `GSV_DB`.`Child` where Child.FID in ("+sb.toString()+");";
+        return this.jdbcTemplate.query(sql,new ChildMapper());
+    }
+    
+    /**
+     * 0-normal 1-URL
+     * @param uid
+     * @param mode
+     * @return 
+     */
+    public List<Child> findByUID(long uid,int mode)
+    {
+        String sql = "Select * from `GSV_DB`.`Child` where `Child`.`FID` in (select `FID` from `Account_Family` where `UID` = "+uid+")";
+        List<Child> list;
+        switch(mode)
+        {
+            case URL:
+        list = this.jdbcTemplate.query(sql,new WithURLMapper());
+        break;
+            default:
+        list = this.jdbcTemplate.query(sql,new ChildMapper());
+        }
         return list;
     }
     
     public List<Child> findByUID(long uid)
     {
-        String sql = "Select * from `GSV_DB`.`Child` where `Child`.`FID` in (select `FID` from `Account_Family` where `UID` = "+uid+")";
-        List<Child> list = this.jdbcTemplate.query(sql,new ChildMapper());
-        return list;
+        return this.findByUID(uid, DEFAULT);
     }
     
     public void delete(int cid)

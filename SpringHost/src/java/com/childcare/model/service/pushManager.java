@@ -8,6 +8,9 @@ package com.childcare.model.service;
 import com.childcare.entity.Device;
 import com.childcare.model.support.ApnsEntity;
 import com.google.gson.Gson;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.springframework.stereotype.Service;
 
 @Service("pushManager")
@@ -15,20 +18,18 @@ import org.springframework.stereotype.Service;
  *
  * @author New User
  */
-public class pushManager implements IpushManager {
-    
-    
-    public void push()
+public class pushManager   {
+    private ExecutorService pool;
+    public pushManager()
     {
-        System.out.println("Push not implemented.");
+        pool = Executors.newCachedThreadPool();
     }
     
-    @Override
-    public void push(Device device)
-    {
-        Gson gson = new Gson();
-        String raw = gson.toJson(device);
-        Thread thread = new Thread(new ApnsEntity(device.getDeviceID(),raw));
-        thread.start();
+
+
+    public void push(List<String> targetList, String msg) {
+         targetList.stream().forEach(str -> pool.execute(new ApnsEntity(str,msg)));
     }
+
+    
 }

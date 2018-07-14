@@ -75,6 +75,7 @@ public class Anchor implements Serializable {
 
     public Anchor(int gid, int seqID) {
         this.anchorPK = new AnchorPK(gid, seqID);
+        this.anchorgroup=new Anchorgroup(gid);
     }
 
     public AnchorPK getAnchorPK() {

@@ -11,6 +11,7 @@
         <servlet-name>dispatcher</servlet-name>
         <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
+        <async-supported>true</async-supported>
     </servlet>
     <servlet-mapping>
         <servlet-name>dispatcher</servlet-name>
@@ -19,9 +20,11 @@
     <session-config>
         <session-timeout>
             30
-        </session-timeout>
+        </session-timeout>  
     </session-config>
     <welcome-file-list>
         <welcome-file>redirect.jsp</welcome-file>
     </welcome-file-list>
+     <!-- WebSocket 需要Servlet3.0 需要web.xml 3.0及以上，并要配置此 -->
+    <absolute-ordering/>
 </web-app>

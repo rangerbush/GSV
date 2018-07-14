@@ -8,15 +8,15 @@
        xmlns:aop="http://www.springframework.org/schema/aop"
        xmlns:tx="http://www.springframework.org/schema/tx"
        xmlns:task="http://www.springframework.org/schema/task"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
-       http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
-       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
-       http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
-       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+       http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+       http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
     
     <!--扫描到有@RestController、@Controller、@Compoment、@RestController、@Repository等注解的类，则把这些类注册为Bean-->
-    <context:component-scan base-package="com.childcare.model"/>
+    <context:component-scan base-package="com.childcare"/>
     <!--配置注解映射支持-->
     <mvc:annotation-driven />
     <!-- ADD PERSISTENCE SUPPORT HERE (jpa, hibernate, etc) -->
@@ -31,6 +31,8 @@
     <bean id="daoRefreshToken" class="com.childcare.model.DAO.DAORefreshToken" />
     <bean id="daoChild" class="com.childcare.model.DAO.DAOChild" />
     <bean id="daoContact" class="com.childcare.model.DAO.DAOContact"/>
+    <bean id="daoDeviceToken" class="com.childcare.model.DAO.DAODeviceToken"/>
+    <bean id="daoSupervisor" class="com.childcare.model.DAO.DAOSupervisor"/>
     <!--Scheduler -->
     <task:annotation-driven />
     <task:scheduler id="myScheduler" pool-size="3"/>
@@ -39,7 +41,6 @@
         class="org.springframework.jdbc.datasource.DataSourceTransactionManager"  
         p:dataSource-ref="dataSource" />  
     <tx:annotation-driven transaction-manager="transactionManager" />
-
      <!-- dataSource 数据库连接池-->  
     <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">  
         <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>  

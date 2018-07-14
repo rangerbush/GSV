@@ -12,7 +12,7 @@ import com.childcare.entity.Anchorgroup;
  * @author New User
  */
 public class AnchorGroupWrapper {
-    private int uid;
+    private long uid;
     private String access;
     private Anchorgroup group;
     
@@ -31,14 +31,14 @@ public class AnchorGroupWrapper {
     /**
      * @return the uid
      */
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 
     /**
      * @param uid the uid to set
      */
-    public void setUid(int uid) {
+    public void setUid(long uid) {
         this.uid = uid;
     }
 

@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 package com.childcare.model;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.childcare.entity.Account;
 import com.childcare.entity.DemoClass;
 import com.childcare.entity.Family;
@@ -11,16 +12,26 @@ import com.childcare.entity.PasswdChanger;
 import com.childcare.entity.MailandPsw;
 import com.childcare.entity.structure.Response;
 import com.childcare.entity.structure.ResponsePayload;
+import com.childcare.entity.wrapper.AccountWrapper;
 import com.childcare.entity.wrapper.NewFamilyWrapper;
 import com.childcare.entity.wrapper.ReadWrapper;
 import com.childcare.entity.wrapper.UpdateWrapper;
+import com.childcare.model.service.ServiceDeviceToken;
 import com.childcare.model.service.serviceAccount;
 import com.childcare.model.service.serviceFamily;
+import com.childcare.model.support.Courier;
 import com.childcare.model.support.JsonWebTokenUtil;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.annotation.Resource;
+import javax.mail.MessagingException;
 import org.springframework.dao.DataAccessException;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_XML_VALUE;
@@ -31,6 +42,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 /**
@@ -65,7 +78,7 @@ public class AccountController {
              int status = Integer.parseInt(map.get("status"));
              if (status<=0 | status>99)
                  return new Response(Response.ERROR_FAMILY_STATUS,"status is out of boundary");
-             return serviceF.addRelationship(fid, uid, status, map.get("access"));
+             return serviceF.addRelationship(fid, uid, status, map.get("access"),0);
              }
              catch (NumberFormatException e)
              {
@@ -103,7 +116,7 @@ public class AccountController {
     @ResponseBody
     @RequestMapping(value = "/create_family", method = POST)
     public Object createFamily(@RequestBody NewFamilyWrapper wrapper) {
-        return this.serviceF.createFamily(wrapper.getUid(), wrapper.getFamily(),wrapper.getToken());
+        return this.serviceF.createFamily(wrapper.getUid(), wrapper.getFamily(),wrapper.getToken(),wrapper.getStatus());
      }
     
   @ResponseBody
@@ -123,6 +136,8 @@ public class AccountController {
             return new Response(Response.ERROR_NULL_FIELD,"Key 'uid' and 'access' expected. ");
 
      }
+    
+ 
     
     
     //--------------------------
@@ -151,24 +166,43 @@ public class AccountController {
     
    /**
     * Register a new account
-    * @param account Auto injected from request body
+     * @param wrapper
     * @return a string as UID for created account, or error message starting with "FAIL: " if there is an error during transaction.
     */
     @ResponseBody
     @RequestMapping(value = "/register", method = POST)
-    public Object register(@RequestBody Account account) {
-        return this.service.createAccount(account);
+    public Object register(@RequestBody AccountWrapper wrapper) {
+            if (wrapper.getAccount()==null|wrapper.getToken()==null)
+                return new Response(Response.ERROR_NULL_FIELD,"Null field detected.");
+            try{
+                return this.service.createAccount(wrapper.getAccount(),wrapper.getToken());
+                }
+        catch (RuntimeException e)
+        {
+            Logger.getLogger(AccountController.class.getName()).log(Level.SEVERE, null, e);
+            return new Response(e);
+        }
+
      }
     
     /**
-     * 登陆
+     * 登陆 并 登记device token信息
      * @param account
      * @return 
      */
     @ResponseBody
     @RequestMapping(value = "/signin", method = POST)
     public Object signIn(@RequestBody MailandPsw account) {
+        Optional<String> opt = Optional.of(account.getDevice());
+        if (!opt.isPresent())
+            return new Response(Response.ERROR_NULL_FIELD,"Device Token is required.");
+        try{
         return this.service.signIn(account);
+        }
+        catch (RuntimeException e)
+        {
+            return new Response(e);
+        }
      }
     
     /**
@@ -191,6 +225,19 @@ public class AccountController {
     @RequestMapping(value = "/resetByMail", method = POST)
     public Object resetByMail(@RequestBody Map<String,String> map) {
         return this.service.forgetPasswordViaMail(map);
+    }
+    
+    @ResponseBody
+    @RequestMapping(value = "/resetByMail_test", method = GET)
+    public Object resetByMail_test() {
+        try{
+        Courier.resetPasswordViaAliYun("This is a test message", "zaixiawuming_90@126.com");
+        }
+        catch(MessagingException e)
+        {
+            return Arrays.toString(e.getStackTrace());
+        }
+        return 200;
     }
     
     /**
@@ -259,31 +306,23 @@ public class AccountController {
     {
         return this.service.changePassword(psd);
     }
+ 
     
-    
-      @ResponseBody
-    @RequestMapping(value = "/d", method = GET , produces = { APPLICATION_JSON_VALUE})
-    public Object PSDDemo()
+    @ResponseBody
+    @RequestMapping(value = "/image",headers=("content-type=multipart/*"), method = POST, produces = { APPLICATION_JSON_VALUE})
+    public Object editAvatar(@RequestParam(value="file",required=false) MultipartFile inputFile,@RequestParam("token") String token,@RequestParam("uid") Long uid)
     {
-        PasswdChanger psd = new PasswdChanger();
-        psd.setUid(2);
-        psd.setOldPasswd("oldpsd");
-        psd.setNewPasswd("newPsd");
-        Map<String,Object> map = new HashMap();
-         Account account = new Account();
-        map.put("account", account);
-        map.put("accessToken","123456");
-        Family f = new Family();
-        f.setMaxCluster(4);
-        f.setFamilyName("Dire");
-        f.setFamilyPassword("fpasswd");
-        //return new NewFamilyWrapper(f,23,"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVSUQiOjIzLCJUeXBlIjoiQWNjZXNzIiwiZXhwIjoxNTIzNjE2Njk3LCJUVEwiOjI0LCJpYXQiOjE1MjM1MzAyOTd9.wHwjU0SLq_j_Mg_meJx0yT7ncau59bRTL1WU3uL7lfE");
-        Map<String,String> m = new HashMap();
-        m.put("uid","23");
-        m.put("access","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVSUQiOjIzLCJUeXBlIjoiQWNjZXNzIiwiZXhwIjoxNTIzNjE2Njk3LCJUVEwiOjI0LCJpYXQiOjE1MjM1MzAyOTd9.wHwjU0SLq_j_Mg_meJx0yT7ncau59bRTL1WU3uL7lfE");
-        return m;
-    
-    
+        if (inputFile == null) {
+           return this.service.deleteAvatar(uid, token);
+        } else {
+            try{
+                return this.service.updateAvatar(uid, token, inputFile);
+            }
+            catch (RuntimeException|UnsupportedEncodingException e)
+            {
+                return new Response(e);
+            }
+        }
     }
          
        

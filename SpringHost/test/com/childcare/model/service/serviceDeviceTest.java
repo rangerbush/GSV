@@ -5,11 +5,17 @@
  */
 package com.childcare.model.service;
 
+import com.childcare.entity.Anchor;
+import com.childcare.entity.Anchorgroup;
 import com.childcare.entity.Device;
 import com.childcare.entity.structure.Response;
 import com.childcare.model.JdbcDataDAOImpl;
 import com.childcare.model.TestFramework;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Resource;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -25,6 +31,8 @@ public class serviceDeviceTest extends TestFramework{
     
     @Resource
     private serviceDevice sd;
+    @Resource
+    private JdbcDataDAOImpl jdbc;
     public serviceDeviceTest() {
     }
     
@@ -43,14 +51,21 @@ public class serviceDeviceTest extends TestFramework{
     @After
     public void tearDown() {
     }
-
-
+/*
+    @Test
+    public void testConstraintCheck()
+    {
+        Device device = this.jdbc.getDaoDevice().getDeviceInstance("demo");
+        assertEquals(device.getLatitude(), new BigDecimal(-37.8175493));
+        assertEquals(device.getLongitude(),new BigDecimal(144.9693288));
+        this.sd.constraintCheck(device);
+    }
 
 
     /**
      * Test of touch method, of class serviceDevice.
      */
-    @Test
+
     public void testTouch() {
         System.out.println("touch");
         Device device = null;
@@ -65,7 +80,6 @@ public class serviceDeviceTest extends TestFramework{
     /**
      * Test of update method, of class serviceDevice.
      */
-    @Test
     public void testUpdate() {
         System.out.println("update");
         Device device = null;
